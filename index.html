@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SonicFlow — Turn Video into a New Sound (8D & 16D Spatial Audio)</title>
+  <meta name="description" content="Turn video into a new sound. Convert, enhance, and download high-definition media with dimensional 8D & 16D spatial audio.">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Cinematic Logo Particle Combining Intro Overlay -->
+  <!-- Cinematic Logo Particle Combining Intro Overlay (Upgraded Kinetic Sound Core) -->
+  <div class="intro-overlay" id="intro-overlay">
+    <canvas id="intro-canvas"></canvas>
+
+    <div class="intro-hud" id="intro-hud">
+      <div class="intro-emblem-glow"></div>
+      
+      <!-- Milkinside Holographic 3D Kinetic Logo Emblem (Dribbble 2904026) -->
+      <div class="intro-kinetic-emblem milkinside-intro-stage" id="intro-kinetic-emblem">
+        <div class="ms-ambient-bloom"></div>
+        <div class="ms-shockwave-ring ring-1"></div>
+        <div class="ms-shockwave-ring ring-2"></div>
+        
+        <div class="milkinside-3d-chassis" id="intro-milkinside-chassis">
+          <svg class="milkinside-intro-svg" viewBox="0 0 71 45" fill="none">
+            <defs>
+              <linearGradient id="intro-ms-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f0ff"/>
+                <stop offset="45%" stop-color="#3b82f6"/>
+                <stop offset="100%" stop-color="#a855f7"/>
+              </linearGradient>
+              <linearGradient id="intro-ms-grad-2" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#ec4899"/>
+                <stop offset="100%" stop-color="#fb7185"/>
+              </linearGradient>
+              <linearGradient id="intro-ms-shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+                <stop offset="35%" stop-color="rgba(0,240,255,0.3)"/>
+                <stop offset="50%" stop-color="rgba(255,255,255,1)"/>
+                <stop offset="65%" stop-color="rgba(236,72,153,0.8)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </linearGradient>
+              <filter id="intro-ms-glow-filter" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="0" stdDeviation="5" flood-color="#00f0ff" flood-opacity="0.8"/>
+                <feDropShadow dx="0" dy="0" stdDeviation="14" flood-color="#a855f7" flood-opacity="0.5"/>
+              </filter>
+            </defs>
+
+            <!-- 3D Kinetic Origami Facets (Milkinside Assembly) -->
+            <path class="ms-intro-facet ms-intro-facet-left" d="M0,0 H31.18 L21.35,44.86 H0 Z" fill="url(#intro-ms-grad-1)"/>
+            <path class="ms-intro-facet ms-intro-facet-center" d="M31.18,0 L36.33,22.19 L41.01,0 L47.85,19.98 L42.12,44.86 H27.20 L21.35,20.10 Z" fill="url(#intro-ms-grad-2)"/>
+            <path class="ms-intro-facet ms-intro-facet-right" d="M41.01,0 H70.49 V44.86 H47.97 L41.01,0 Z" fill="url(#intro-ms-grad-1)"/>
+
+            <!-- Specular Highlight Overlay -->
+            <path class="ms-intro-facet-outline" d="M70.4901 8.97164V0.000244141H41.0069L36.3271 22.1895C36.3271 22.2294 36.3076 22.2692 36.2686 22.3091H36.2101V22.1895C35.6641 19.7174 35.0986 17.2453 34.5137 14.7731C33.9677 12.301 33.4217 9.84885 32.8757 7.4166C32.3297 4.94448 31.7643 2.47236 31.1793 0.000244141H0V4.42613V8.79221V17.8234V26.8546V35.8858V44.8572H21.3517V32.4767V20.156V20.0962H21.4101C21.4492 20.0962 21.4686 20.1161 21.4686 20.156C22.4436 24.2629 23.3991 28.3698 24.335 32.4767C25.271 36.5836 26.2265 40.7104 27.2014 44.8572H42.1184L47.8512 19.9766V19.9167H47.9096C47.9486 19.9167 47.9681 19.9367 47.9681 19.9766V32.4169V44.8572H70.4901V35.8858V26.9144V17.943V8.97164Z" fill="none" stroke="url(#intro-ms-shimmer)" stroke-width="2.2" class="ms-intro-shimmer-stroke"/>
+          </svg>
+        </div>
+        
+        <div class="ms-branding-reveal">
+          <span class="ms-brand-title">SONICFLOW</span>
+          <span class="ms-brand-sub">MILKINSIDE KINETIC ARCHITECTURE</span>
+        </div>
+      </div>
+      
+      <div class="intro-telemetry-badge" id="intro-telemetry">
+        <span class="intro-status-pulse"></span>
+        <span id="intro-status-text">INITIALIZING SPATIAL MATRIX...</span>
+      </div>
+    </div>
+
+    <button class="btn-skip-intro" id="btn-skip-intro" title="Skip to Studio">
+      SKIP INTRO <span>➔</span>
+    </button>
+  </div>
+
+  <!-- Cinematic Ambient Video Background (Retro-Futuristic Cassette from Dribbble) -->
+  <div class="bg-video-container" id="bg-video-container">
+    <video id="bg-video" class="bg-video-element" autoplay loop muted playsinline preload="auto">
+      <source src="assets/cassette_bg.mp4" type="video/mp4">
+      <source src="https://cdn.dribbble.com/userupload/43113974/file/original-31d3d47b4aafaa9a54ac2db13d1a1cdd.mp4" type="video/mp4">
+    </video>
+    <div class="bg-video-overlay"></div>
+    <div class="bg-video-scanlines"></div>
+  </div>
+
+  <!-- Cosmic Dimension Background (Web Design Trends 2026 Virtual Reality Websites 3) -->
+  <div class="bg-cosmic-backdrop" id="bg-cosmic-backdrop">
+    <div class="bg-cosmic-overlay"></div>
+    <div class="bg-cosmic-grid"></div>
+  </div>
+
+  <!-- Dynamic Interactive Atmospheric Canvas -->
+  <canvas id="bg-canvas"></canvas>
+  <div class="bg-vignette"></div>
+  <div class="volumetric-fog"></div>
+
+  <!-- Main Asymmetric Application Interface -->
+  <div class="app-container app-reveal active" id="main-app">
+    <!-- Top Navigation Header (Exact Reference Match) -->
+    <header class="app-header">
+      <!-- Left: Milkinside Kinetic Logo Emblem (Dribbble 2904026 Inspiration) -->
+      <a href="#" class="brand-logo upgraded-brand-logo milkinside-brand-logo" id="brand-link" aria-label="SonicFlow Home">
+        <div class="milkinside-logo-mark header-mark" id="header-milkinside-logo" title="Milkinside Kinetic Logo">
+          <div class="ms-glow-backdrop"></div>
+          <svg class="milkinside-svg" viewBox="0 0 71 45" fill="none">
+            <defs>
+              <linearGradient id="hdr-ms-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f0ff"/>
+                <stop offset="60%" stop-color="#818cf8"/>
+                <stop offset="100%" stop-color="#c084fc"/>
+              </linearGradient>
+              <linearGradient id="hdr-ms-grad-2" x1="0%" y1="100%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#38bdf8"/>
+                <stop offset="50%" stop-color="#ec4899"/>
+                <stop offset="100%" stop-color="#f43f5e"/>
+              </linearGradient>
+              <linearGradient id="hdr-ms-shimmer" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0)"/>
+                <stop offset="40%" stop-color="rgba(0,240,255,0.2)"/>
+                <stop offset="50%" stop-color="rgba(255,255,255,0.95)"/>
+                <stop offset="60%" stop-color="rgba(192,132,252,0.8)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </linearGradient>
+            </defs>
+            <path class="ms-facet ms-facet-left" d="M0,0 H31.18 L21.35,44.86 H0 Z" fill="url(#hdr-ms-grad-1)"/>
+            <path class="ms-facet ms-facet-center" d="M31.18,0 L36.33,22.19 L41.01,0 L47.85,19.98 L42.12,44.86 H27.20 L21.35,20.10 Z" fill="url(#hdr-ms-grad-2)"/>
+            <path class="ms-facet ms-facet-right" d="M41.01,0 H70.49 V44.86 H47.97 L41.01,0 Z" fill="url(#hdr-ms-grad-1)"/>
+            <path class="ms-facet-master" d="M70.4901 8.97164V0.000244141H41.0069L36.3271 22.1895C36.3271 22.2294 36.3076 22.2692 36.2686 22.3091H36.2101V22.1895C35.6641 19.7174 35.0986 17.2453 34.5137 14.7731C33.9677 12.301 33.4217 9.84885 32.8757 7.4166C32.3297 4.94448 31.7643 2.47236 31.1793 0.000244141H0V4.42613V8.79221V17.8234V26.8546V35.8858V44.8572H21.3517V32.4767V20.156V20.0962H21.4101C21.4492 20.0962 21.4686 20.1161 21.4686 20.156C22.4436 24.2629 23.3991 28.3698 24.335 32.4767C25.271 36.5836 26.2265 40.7104 27.2014 44.8572H42.1184L47.8512 19.9766V19.9167H47.9096C47.9486 19.9167 47.9681 19.9367 47.9681 19.9766V32.4169V44.8572H70.4901V35.8858V26.9144V17.943V8.97164Z" fill="none" stroke="url(#hdr-ms-shimmer)" stroke-width="1.6" class="ms-shimmer-stroke"/>
+          </svg>
+        </div>
+        <span class="brand-name">SONICFLOW</span>
+      </a>
+
+      <!-- Center: Navigation Menu with 21st.dev SlideTabs -->
+      <nav class="nav-links slide-tabs-nav" id="slide-tabs-nav">
+        <ul class="slide-tabs-list" id="slide-tabs-list">
+          <li class="slide-tab-item active" data-tab="converter">
+            <a href="#converter" class="slide-tab-link" id="nav-converter">Converter</a>
+          </li>
+          <li class="slide-tab-item" data-tab="studio">
+            <a href="#studio" class="slide-tab-link" id="nav-studio">Audio Studio</a>
+          </li>
+          <li class="slide-tab-item" data-tab="features">
+            <a href="#features" class="slide-tab-link" id="nav-features">Features</a>
+          </li>
+          <li class="slide-tab-item" data-tab="gallery">
+            <a href="#gallery" class="slide-tab-link" id="nav-gallery">Cinema 3D</a>
+          </li>
+          <li class="slide-tab-item" data-tab="pass">
+            <a href="#signin-modal" class="slide-tab-link" id="nav-pass">Cinema Pass</a>
+          </li>
+          <!-- Animated Sliding Cursor Highlight Pill -->
+          <li class="slide-tab-cursor" id="slide-tab-cursor"></li>
+        </ul>
+      </nav>
+
+      <!-- Right: Search, Dimension Toggle & Sign In -->
+      <div class="header-nav-actions">
+        <!-- Dimension Mode Switcher -->
+        <div class="dimension-toggle-pill" id="dimension-switcher" title="Switch Theme Visual">
+          <button class="dim-btn active" id="dim-cassette" data-dim="cassette">📼 Retro Cassette</button>
+          <button class="dim-btn" id="dim-cosmic" data-dim="cosmic">🌌 Cosmic</button>
+        </div>
+
+        <button class="btn-replay-intro" id="btn-replay-intro" title="Replay Opening Animation">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="1 4 1 10 7 10"></polyline>
+            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+          </svg>
+          <span>Intro</span>
+        </button>
+
+        <button class="btn-icon-search" id="btn-search" title="Search Media" aria-label="Search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <button class="btn-signin-pill" id="btn-signin" title="User Sign In">
+          <span class="concentric-ring-icon">
+            <span class="ring-outer"></span>
+            <span class="ring-core"></span>
+          </span>
+          <span>Sign In</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Left Side Vertical Scroll Indicator -->
+    <div class="vertical-scroll-indicator">
+      <span class="scroll-label">SCROLL</span>
+      <div class="scroll-mouse-pill">
+        <span class="scroll-wheel"></span>
+      </div>
+    </div>
+
+    <!-- 21st.dev Ruixen UI Image Stream Hero Section (Triggers directly after Logo Animation) -->
+    <section class="image-stream-hero-stage stream-active" id="hero-stream-section">
+      <!-- Ambient 21st.dev Background Elements -->
+      <div class="stream-matrix-grid"></div>
+      <div class="stream-ambient-glow glow-cyan"></div>
+      <div class="stream-ambient-glow glow-purple"></div>
+      
+      <!-- Vanishing Point Radial Burst -->
+      <div class="stream-vanishing-point" id="stream-vanishing-point"></div>
+
+      <!-- 3D Perspective Dual Image Stream Corridor -->
+      <div class="stream-corridor-wrapper" id="stream-corridor-wrapper">
+        <!-- Left Corridor Rail: Sweeps outward to left, growing towards viewer -->
+        <div class="stream-rail stream-rail-left" id="stream-rail-left">
+          <div class="stream-rail-track stream-track-left">
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=700&q=80" alt="16D Master Console">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">16D Master Console</span>
+                <span class="stream-card-tag tag-cyan">Studio Gear</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80" alt="Spatial Soundwave">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Spatial Soundwave</span>
+                <span class="stream-card-tag tag-pink">Acoustic</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=700&q=80" alt="Cyber Synthesizer">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Cyber Synthesizer</span>
+                <span class="stream-card-tag tag-amber">Synthesizer</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=700&q=80" alt="Binaural Arena">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Binaural Arena</span>
+                <span class="stream-card-tag tag-cyan">16D Audio</span>
+              </div>
+            </div>
+            <!-- Seamless duplicated set for infinite loop -->
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=700&q=80" alt="16D Master Console">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">16D Master Console</span>
+                <span class="stream-card-tag tag-cyan">Studio Gear</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80" alt="Spatial Soundwave">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Spatial Soundwave</span>
+                <span class="stream-card-tag tag-pink">Acoustic</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=700&q=80" alt="Cyber Synthesizer">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Cyber Synthesizer</span>
+                <span class="stream-card-tag tag-amber">Synthesizer</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=700&q=80" alt="Binaural Arena">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Binaural Arena</span>
+                <span class="stream-card-tag tag-cyan">16D Audio</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Corridor Rail: Sweeps outward to right, growing towards viewer -->
+        <div class="stream-rail stream-rail-right" id="stream-rail-right">
+          <div class="stream-rail-track stream-track-right">
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=700&q=80" alt="Analog Cassette">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Analog Cassette</span>
+                <span class="stream-card-tag tag-amber">Tape Master</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=80" alt="Cinema Wave 4K">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Cinema Wave 4K</span>
+                <span class="stream-card-tag tag-cyan">Lossless</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=700&q=80" alt="Cosmic Resonance">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Cosmic Resonance</span>
+                <span class="stream-card-tag tag-pink">Spatial 360</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=700&q=80" alt="Live Concert Stage">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Live Concert Stage</span>
+                <span class="stream-card-tag tag-emerald">Dynamic EQ</span>
+              </div>
+            </div>
+            <!-- Seamless duplicated set for infinite loop -->
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=700&q=80" alt="Analog Cassette">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Analog Cassette</span>
+                <span class="stream-card-tag tag-amber">Tape Master</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=80" alt="Cinema Wave 4K">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Cinema Wave 4K</span>
+                <span class="stream-card-tag tag-cyan">Lossless</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=700&q=80" alt="Cosmic Resonance">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Cosmic Resonance</span>
+                <span class="stream-card-tag tag-pink">Spatial 360</span>
+              </div>
+            </div>
+            <div class="stream-card">
+              <img src="https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=700&q=80" alt="Live Concert Stage">
+              <div class="stream-card-overlay"></div>
+              <div class="stream-card-meta">
+                <span class="stream-card-title">Live Concert Stage</span>
+                <span class="stream-card-tag tag-emerald">Dynamic EQ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Focal Stage (Foreground Focus) -->
+      <div class="stream-hero-content" id="stream-hero-content">
+        <!-- 21st.dev Style Pill Badge -->
+        <div class="stream-badge-pill">
+          <span class="stream-badge-pulse"></span>
+          <span class="stream-badge-text">✨ 12,000+ CRAFTED PRESETS • MILKINSIDE KINETIC CORE</span>
+        </div>
+
+        <!-- Living Gradient Stroke Drawing Headline (Path Drawing Portfolio Hero) -->
+        <div class="stream-hero-title-box">
+          <svg viewBox="0 0 520 120" class="path-drawing-svg" aria-label="SONICFLOW // SPATIAL CINEMA">
+            <defs>
+              <linearGradient id="stream-living-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#00f0ff">
+                  <animate attributeName="stop-color" values="#00f0ff;#a855f7;#f59e0b;#00f0ff" dur="6s" repeatCount="indefinite"/>
+                </stop>
+                <stop offset="50%" stop-color="#ec4899">
+                  <animate attributeName="stop-color" values="#ec4899;#3b82f6;#f43f5e;#ec4899" dur="6s" repeatCount="indefinite"/>
+                </stop>
+                <stop offset="100%" stop-color="#f59e0b">
+                  <animate attributeName="stop-color" values="#f59e0b;#00f0ff;#a855f7;#f59e0b" dur="6s" repeatCount="indefinite"/>
+                </stop>
+              </linearGradient>
+            </defs>
+            <text x="50%" y="48" text-anchor="middle" class="path-stroke-text path-draw-line1">SONICFLOW</text>
+            <text x="50%" y="104" text-anchor="middle" class="path-stroke-text path-draw-line2">SPATIAL CINEMA</text>
+          </svg>
+        </div>
+
+        <p class="stream-hero-tagline">
+          Two endless corridors of audio stems and spatial presets ride from the vanishing point directly into your ears. Turn any video into an immersive dimensional master.
+        </p>
+
+        <!-- Shatlyk1011 Motion Button Call To Action -->
+        <div class="stream-hero-actions">
+          <a href="#converter" class="motion-btn motion-btn-lg" id="btn-hero-get-started">
+            <span class="motion-btn-circle" id="motion-btn-circle"></span>
+            <span class="motion-btn-shimmer"></span>
+            <span class="motion-btn-text">Get Started</span>
+            <span class="motion-btn-arrow">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </span>
+          </a>
+
+          <a href="#gallery" class="motion-btn-secondary" id="btn-hero-explore-gallery">
+            <span>Explore 3D Gallery</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Main Editorial Hero Section (Exact Reference Composition) -->
+    <main class="hero-editorial-stage" id="converter">
+      <!-- Left Content: Headline, Input Dock, Option Selectors & Badges -->
+      <section class="hero-left-content">
+        <!-- DesignLayer: Path Drawing Portfolio Hero Header -->
+        <div class="path-drawing-hero-wrapper">
+          <div class="hero-eyebrow-pill">
+            <span class="eyebrow-pulse-dot"></span>
+            <span>✨ NEXT-GEN SPATIAL AUDIO &amp; 4K CINEMA</span>
+          </div>
+
+          <div class="path-drawing-title-container">
+            <svg viewBox="0 0 520 120" class="path-drawing-svg" aria-label="SONICFLOW // SPATIAL CINEMA">
+              <defs>
+                <linearGradient id="hero-living-path-stroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#00f0ff">
+                    <animate attributeName="stop-color" values="#00f0ff;#a855f7;#f59e0b;#00f0ff" dur="7s" repeatCount="indefinite"/>
+                  </stop>
+                  <stop offset="50%" stop-color="#ec4899">
+                    <animate attributeName="stop-color" values="#ec4899;#3b82f6;#f43f5e;#ec4899" dur="7s" repeatCount="indefinite"/>
+                  </stop>
+                  <stop offset="100%" stop-color="#f59e0b">
+                    <animate attributeName="stop-color" values="#f59e0b;#00f0ff;#a855f7;#f59e0b" dur="7s" repeatCount="indefinite"/>
+                  </stop>
+                </linearGradient>
+
+                <linearGradient id="hero-text-luminous" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#ffffff"/>
+                  <stop offset="50%" stop-color="#e2e8f0"/>
+                  <stop offset="100%" stop-color="#94a3b8"/>
+                </linearGradient>
+              </defs>
+
+              <!-- SVG Animated Stroke Living Path Text -->
+              <text x="0" y="52" class="path-stroke-text path-draw-line1">SONICFLOW</text>
+              <text x="0" y="105" class="path-stroke-text path-draw-line2">SPATIAL CINEMA</text>
+            </svg>
+          </div>
+
+          <div class="hero-subtitle path-hero-tagline">CONVERT • ENHANCE • FEEL THE DIFFERENCE</div>
+        </div>
+
+        <!-- Futuristic Glowing YouTube Input Dock -->
+        <div class="futuristic-input-dock" id="url-container">
+          <div class="dock-glow-border"></div>
+          <div class="dock-inner">
+            <div class="youtube-indicator" title="YouTube Stream Ingestion">
+              <svg viewBox="0 0 24 24" class="yt-icon" width="22" height="22">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z" fill="#FF0000"/>
+                <polygon points="9.545 15.568 9.545 8.432 15.818 12" fill="#FFFFFF"/>
+              </svg>
+            </div>
+
+            <input 
+              type="text" 
+              id="url-input" 
+              class="cyber-input" 
+              placeholder="Paste your YouTube URL..." 
+              autocomplete="off" 
+              spellcheck="false"
+            >
+
+            <div class="dock-controls">
+              <button class="btn-paste-tactile" id="btn-paste" title="Paste from clipboard">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                </svg>
+                <span>Paste</span>
+              </button>
+
+              <button class="btn-circular-analyze" id="btn-analyze" title="Analyze and Convert">
+                <div class="analyze-ring"></div>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="analyze-icon">
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                  <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+                <span id="analyze-btn-text" style="display: none;">Analyze</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🧊 3D Floating Media Object (Physical Spatial Levitation Showcase) -->
+        <div class="hero-floating-media-pedestal" id="hero-floating-media-pedestal">
+          <div class="fmo-pedestal-glow"></div>
+          <div class="fmo-magnetic-ring"></div>
+
+          <!-- Ambient Particle & Audio Wave Emitter Canvas -->
+          <canvas class="fmo-particles-canvas" id="fmo-particles-canvas"></canvas>
+
+          <!-- 3D Physics Chassis (Rotates & Tilts) -->
+          <div class="fmo-3d-wrapper" id="fmo-3d-wrapper">
+            <div class="fmo-chassis" id="fmo-chassis">
+              <!-- Physical Depth Layers (Simulates Extruded Thickness) -->
+              <div class="fmo-depth depth-back"></div>
+              <div class="fmo-depth depth-mid"></div>
+              <div class="fmo-depth depth-edge-glow"></div>
+
+              <!-- Front Face: YouTube Media Object -->
+              <div class="fmo-front-face" id="fmo-front-face">
+                <img src="https://img.youtube.com/vi/4NRXx6U8ABQ/hqdefault.jpg" alt="Active Media Object" class="fmo-thumb-img" id="fmo-thumb-img">
+                <div class="fmo-glass-shield"></div>
+
+                <!-- Ambient Lighting Specular Sheen (Reflects Cursor) -->
+                <div class="fmo-specular-reflection" id="fmo-specular-reflection"></div>
+
+                <!-- Corner Cyber Brackets (translateZ: 24px) -->
+                <div class="fmo-bracket bracket-tl"></div>
+                <div class="fmo-bracket bracket-tr"></div>
+                <div class="fmo-bracket bracket-bl"></div>
+                <div class="fmo-bracket bracket-br"></div>
+
+                <!-- 3D Elevated Floating Play / Audio Crystal (translateZ: 38px) -->
+                <button class="fmo-floating-play-btn" id="fmo-btn-play" title="Play Spatial Audio Preview" type="button">
+                  <div class="fmo-btn-ring"></div>
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="7 4 19 12 7 20 7 4"></polygon>
+                  </svg>
+                </button>
+
+                <!-- Media Telemetry Header & Badge (translateZ: 20px) -->
+                <div class="fmo-meta-overlay">
+                  <div class="fmo-channel-chip">
+                    <span class="fmo-dot-pulse"></span>
+                    <span id="fmo-artist">The Weeknd</span>
+                  </div>
+                  <div class="fmo-duration-pill" id="fmo-duration">03:23</div>
+                </div>
+
+                <div class="fmo-bottom-bar">
+                  <div class="fmo-title-text" id="fmo-title">The Weeknd – Blinding Lights</div>
+                  <div class="fmo-spatial-indicator">
+                    <span class="fmo-badge-3d">🧊 3D FLOATING MEDIA</span>
+                    <span class="fmo-views-count" id="fmo-views">3.1B views</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Break Apart / Disintegration Shatter Canvas -->
+              <canvas class="fmo-shatter-canvas" id="fmo-shatter-canvas" style="display: none;"></canvas>
+            </div>
+          </div>
+
+          <!-- Dynamic Floor Elevation Shadow -->
+          <div class="fmo-elevation-shadow" id="fmo-elevation-shadow"></div>
+        </div>
+
+        <!-- Quick Demo Chips -->
+        <div class="quick-demos">
+          <span class="quick-demos-label">Demo Streams:</span>
+          <button class="demo-chip" data-title="The Weeknd – Blinding Lights" data-artist="The Weeknd" data-duration="03:23" data-views="3.1B views" data-tag="Synthpop" data-url="https://www.youtube.com/watch?v=4NRXx6U8ABQ">✨ The Weeknd – Blinding Lights</button>
+          <button class="demo-chip" data-title="Cyberpunk Horizon (Original Mix)" data-artist="SonicFlow Lab" data-duration="03:42" data-views="1.4M views" data-tag="Synthwave" data-url="https://www.youtube.com/watch?v=demo_cyberpunk">⚡ Cyberpunk Horizon</button>
+          <button class="demo-chip" data-title="Midnight Rain Lo-Fi Chill" data-artist="Tokyo Lo-Fi Club" data-duration="02:58" data-views="2.8M views" data-tag="Lo-Fi" data-url="https://www.youtube.com/watch?v=demo_lofi">🎧 Midnight Lo-Fi</button>
+        </div>
+
+        <!-- 3 Horizontal Option Selector Groups (Exact Layout from Reference Image) -->
+        <div class="quick-config-dock">
+          <!-- 1. Format Group -->
+          <div class="config-group">
+            <span class="config-label">Format</span>
+            <div class="config-pills">
+              <button class="opt-pill active" id="tab-mp3" data-format="MP3">MP3</button>
+              <button class="opt-pill" id="tab-mp4" data-format="MP4">MP4</button>
+            </div>
+          </div>
+
+          <!-- 2. Audio Effect Group -->
+          <div class="config-group">
+            <span class="config-label">Audio Effect</span>
+            <div class="config-pills">
+              <button class="opt-pill" id="mode-off" data-mode="OFF">Off</button>
+              <button class="opt-pill active" id="mode-8d" data-mode="8D">8D</button>
+              <button class="opt-pill" id="mode-16d" data-mode="16D">16D</button>
+            </div>
+          </div>
+
+          <!-- 3. Quality Group -->
+          <div class="config-group">
+            <span class="config-label">Quality (upto 4K)</span>
+            <div class="config-pills" id="pills-mp3">
+              <button class="opt-pill" data-quality="128 kbps" data-size="3.4 MB">128 kbps</button>
+              <button class="opt-pill" data-quality="192 kbps" data-size="5.1 MB">192 kbps</button>
+              <button class="opt-pill active" data-quality="320 kbps" data-size="8.4 MB">320 kbps</button>
+            </div>
+            <div class="config-pills" id="pills-mp4" style="display: none;">
+              <button class="opt-pill" data-quality="720p HD" data-size="28.4 MB">720p</button>
+              <button class="opt-pill" data-quality="1080p FHD" data-size="54.8 MB">1080p</button>
+              <button class="opt-pill" data-quality="1440p QHD" data-size="92.4 MB">1440p</button>
+              <button class="opt-pill active" data-quality="4K UHD" data-size="142.0 MB">4K UHD</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hidden Compatibility Anchors for Audio Engine Integration -->
+        <div style="display: none;">
+          <button id="btn-convert">Initiate</button>
+          <span id="convert-btn-text">Convert</span>
+          <span id="summary-format-text">MP3 (320 kbps)</span>
+          <span id="summary-size-text">8.4 MB</span>
+          <span id="est-size-badge">8.4 MB</span>
+          <span id="action-summary-title">Ready</span>
+          <span id="action-summary-desc">Spatial Sound Mode</span>
+          <span id="action-icon-display">🎧</span>
+          <input type="range" id="slider-speed" min="0.5" max="2.5" step="0.1" value="1.0">
+          <input type="range" id="slider-reverb" min="0" max="1.0" step="0.05" value="0.4">
+          <span id="speed-val">1.0x</span>
+          <span id="reverb-val">40%</span>
+          <span id="telemetry-azimuth">0°</span>
+          <span id="telemetry-pan">CENTER</span>
+          <span id="telemetry-filter">18.0 kHz</span>
+          <canvas id="orbit-canvas" width="100" height="100"></canvas>
+          <canvas id="wave-canvas" width="100" height="40"></canvas>
+          <div id="media-preview-card"></div>
+          <span id="media-duration">03:23</span>
+          <span id="media-views">3.1B views</span>
+          <span id="media-title">The Weeknd – Blinding Lights</span>
+          <span id="media-channel">The Weeknd</span>
+          <img id="media-thumbnail" src="https://img.youtube.com/vi/4NRXx6U8ABQ/hqdefault.jpg" alt="Preview">
+          <button id="btn-preview-toggle"><span id="preview-btn-label">Preview</span></button>
+        </div>
+
+        <!-- 4 Technological Pillars / Feature Badges (Exact from Reference!) -->
+        <div class="features-row-grid" id="features">
+          <div class="feature-item">
+            <div class="feature-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div class="feature-item-text">
+              <span class="feature-item-title">Fast Conversion</span>
+              <span class="feature-item-sub">Lightning fast processing</span>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 3h12l4 6-10 12L2 9z"></path>
+              </svg>
+            </div>
+            <div class="feature-item-text">
+              <span class="feature-item-title">High Quality</span>
+              <span class="feature-item-sub">Up to 320kbps / 4K</span>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+              </svg>
+            </div>
+            <div class="feature-item-text">
+              <span class="feature-item-title">Spatial Audio</span>
+              <span class="feature-item-sub">8D & 16D Experience</span>
+            </div>
+          </div>
+
+          <div class="feature-item">
+            <div class="feature-icon-circle">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <div class="feature-item-text">
+              <span class="feature-item-title">100% Secure</span>
+              <span class="feature-item-sub">Your data stays private</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Visual Area: Retro-Futuristic Cassette Player or Celestial Portal Artwork -->
+      <section class="hero-right-visual" id="hero-right-visual">
+        <!-- 1. Retro-Futuristic Cassette Player Stage (Active by Default!) -->
+        <div class="retro-cassette-stage active" id="cassette-stage">
+          <div class="cassette-laser-grid"></div>
+          <div class="cassette-ambient-glow"></div>
+
+          <!-- Floating 3D Cassette Player Chassis with Motion-Design Loop -->
+          <div class="cassette-3d-chassis" id="cassette-chassis">
+            <video id="cassette-hero-video" class="cassette-video-render" autoplay loop muted playsinline preload="auto" poster="assets/retro_cassette.jpg">
+              <source src="assets/cassette_bg.mp4" type="video/mp4">
+              <source src="https://cdn.dribbble.com/userupload/43113974/file/original-31d3d47b4aafaa9a54ac2db13d1a1cdd.mp4" type="video/mp4">
+            </video>
+            <img src="assets/retro_cassette.jpg" alt="Retro-Futuristic Cassette Player" class="cassette-base-render cassette-fallback-img" id="cassette-fallback-img" style="display:none;">
+
+            <!-- Real-time Animated Mechanical Tape Reels (Spinning Continuous Loop) -->
+            <div class="tape-reel-overlay left-reel-wrap" id="tape-reel-left">
+              <div class="spool-rotating-wheel">
+                <span class="spool-fin fin-1"></span>
+                <span class="spool-fin fin-2"></span>
+                <span class="spool-fin fin-3"></span>
+                <div class="spool-core"></div>
+              </div>
+            </div>
+
+            <div class="tape-reel-overlay right-reel-wrap" id="tape-reel-right">
+              <div class="spool-rotating-wheel">
+                <span class="spool-fin fin-1"></span>
+                <span class="spool-fin fin-2"></span>
+                <span class="spool-fin fin-3"></span>
+                <div class="spool-core"></div>
+              </div>
+            </div>
+
+            <!-- Animated Analog VU Meter Needles (Reactive to Sound & Idle Rhythm) -->
+            <div class="vu-meter-box vu-top-meters">
+              <div class="vu-needle" id="needle-top-left"></div>
+              <div class="vu-needle" id="needle-top-right"></div>
+            </div>
+
+            <div class="vu-meter-box vu-bottom-meters">
+              <div class="vu-needle" id="needle-bottom-left"></div>
+              <div class="vu-needle" id="needle-bottom-right"></div>
+            </div>
+
+            <!-- Pulsing Circuit & Knob Highlights -->
+            <div class="circuit-pulse-lines"></div>
+            <div class="knob-glow-ring top-knob"></div>
+            <div class="knob-glow-ring bottom-knob"></div>
+
+            <!-- Interactive Mechanical Cassette Tape Deck Overlay -->
+            <div class="cassette-info-tape-label">
+              <div class="tape-label-brand">NOVA CASSETTE SERIES // UL 90</div>
+              <div class="tape-label-track" id="cassette-track-title">THE WEEKND // BLINDING LIGHTS</div>
+              <div class="tape-label-mode" id="cassette-track-mode">8D SPATIAL // TAPE A</div>
+            </div>
+
+            <!-- Physical Tape Control Buttons -->
+            <div class="cassette-transport-bar">
+              <button class="cas-ctrl-btn active" id="cas-btn-play" title="Play Tape Audio">
+                <span class="ctrl-icon">▶</span>
+                <span class="ctrl-text">PLAY</span>
+              </button>
+              <button class="cas-ctrl-btn" id="cas-btn-pause" title="Pause Tape">
+                <span class="ctrl-icon">❚❚</span>
+                <span class="ctrl-text">PAUSE</span>
+              </button>
+              <button class="cas-ctrl-btn" id="cas-btn-ff" title="Fast Forward (Accelerate Reels)">
+                <span class="ctrl-icon">⏩</span>
+                <span class="ctrl-text">FF</span>
+              </button>
+              <button class="cas-ctrl-btn" id="cas-btn-rew" title="Rewind Tape">
+                <span class="ctrl-icon">⏪</span>
+                <span class="ctrl-text">REW</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Vertical Step Tracker (Exact Reference Match) -->
+        <div class="hero-step-tracker">
+          <div class="step-item active">
+            <span class="step-num">01</span>
+            <span class="step-name">Experience</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item">
+            <span class="step-num">02</span>
+            <span class="step-name">Convert</span>
+          </div>
+          <div class="step-line"></div>
+          <div class="step-item">
+            <span class="step-num">03</span>
+            <span class="step-name">Feel</span>
+          </div>
+        </div>
+
+        <!-- Bottom Right Editorial Quote (Exact Reference Match) -->
+        <div class="hero-quote-caption">
+          <div class="quote-line-1">More</div>
+          <div class="quote-line-2">Than a Converter.</div>
+          <div class="quote-line-3">A New Listening Dimension.</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Dedicated Interactive Audio Studio Section -->
+    <section class="studio-laboratory-section" id="studio">
+      <div class="studio-section-header">
+        <div class="studio-tag-pill">INTERACTIVE LABORATORY</div>
+        <h2 class="studio-title">Acoustic Sculpting Studio</h2>
+        <p class="studio-sub">Test real-time 8D & 16D spatial sound diffusion, shape frequencies with live DSP sliders, and preview binaural motion.</p>
+      </div>
+
+      <div class="studio-lab-grid">
+        <!-- 8D Spatial Orbit Radar -->
+        <div class="studio-card orbit-radar-card">
+          <div class="card-top-bar">
+            <span class="card-badge">360° SPATIAL DIFFUSION RADAR</span>
+            <span class="live-pulse-dot"></span>
+          </div>
+          <div class="orbit-canvas-container">
+            <canvas id="studio-orbit-canvas" width="400" height="260"></canvas>
+            <div class="listener-head-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+              </svg>
+            </div>
+          </div>
+          <div class="orbit-telemetry-row">
+            <div class="telemetry-stat">
+              <span class="stat-label">TRAJECTORY</span>
+              <span class="stat-val" id="telemetry-trajectory">8D Circular (Theta: 142°)</span>
+            </div>
+            <div class="telemetry-stat">
+              <span class="stat-label">DIFFUSION SPEED</span>
+              <span class="stat-val" id="telemetry-speed">0.18 Hz (Smooth Pan)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time DSP Equalizer & Audio Controls -->
+        <div class="studio-card dsp-controls-card">
+          <div class="card-top-bar">
+            <span class="card-badge">DIGITAL SIGNAL PROCESSOR</span>
+            <span class="dsp-chip">ACTIVE 32-BIT FLOAT</span>
+          </div>
+
+          <div class="dsp-sliders-group">
+            <div class="dsp-slider-item">
+              <div class="slider-info">
+                <span>Sub-Bass Boost</span>
+                <span class="slider-val" id="val-bass">+6 dB</span>
+              </div>
+              <input type="range" min="0" max="18" value="6" id="slider-bass" class="cyber-range">
+            </div>
+
+            <div class="dsp-slider-item">
+              <div class="slider-info">
+                <span>Vocal Clarity</span>
+                <span class="slider-val" id="val-vocal">+3 dB</span>
+              </div>
+              <input type="range" min="0" max="12" value="3" id="slider-vocal" class="cyber-range">
+            </div>
+
+            <div class="dsp-slider-item">
+              <div class="slider-info">
+                <span>Spatial Orbit Radius</span>
+                <span class="slider-val" id="val-radius">85%</span>
+              </div>
+              <input type="range" min="20" max="100" value="85" id="slider-radius" class="cyber-range">
+            </div>
+
+            <div class="dsp-slider-item">
+              <div class="slider-info">
+                <span>Acoustic Reverb Depth</span>
+                <span class="slider-val" id="val-reverb">40% (Hall)</span>
+              </div>
+              <input type="range" min="0" max="100" value="40" id="slider-reverb" class="cyber-range">
+            </div>
+          </div>
+
+          <!-- Sound FX Interactive Generator Buttons -->
+          <div class="studio-action-row">
+            <button class="btn-studio-fx active" id="btn-fx-8d" type="button">
+              <span>🎧 Play 8D Binaural Sweep</span>
+            </button>
+            <button class="btn-studio-fx" id="btn-fx-16d" type="button">
+              <span>🌌 Play 16D Multiverse Orbit</span>
+            </button>
+            <button class="btn-studio-stop" id="btn-fx-stop" type="button">
+              <span>■ Stop Audio</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Meng To: 3D Cylindrical Gallery Section -->
+    <section class="cylindrical-gallery-section" id="gallery">
+      <div class="gallery-section-header">
+        <div class="studio-tag-pill">3D CYLINDRICAL CINEMA SHOWCASE</div>
+        <h2 class="studio-title">Immersive Gallery Matrix</h2>
+        <p class="studio-sub">Drag or swipe to rotate 360° through master spatial albums and cinema productions.</p>
+      </div>
+
+      <div class="cylinder-carousel-viewport" id="cylinder-viewport">
+        <div class="cylinder-carousel-scene">
+          <div class="cylinder-carousel-chassis" id="cylinder-chassis">
+            <div class="cylinder-card" style="--card-index: 0;" data-title="16D Spatial Odyssey" data-sub="Binaural Master Cut">
+              <img src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=700&q=80" alt="Spatial Odyssey" class="cylinder-img">
+              <div class="cylinder-card-overlay">
+                <span class="cylinder-card-badge">16D SPATIAL</span>
+                <h4 class="cylinder-card-title">Spatial Odyssey</h4>
+                <p class="cylinder-card-sub">Orbital Diffusion Master</p>
+              </div>
+            </div>
+            <div class="cylinder-card" style="--card-index: 1;" data-title="Cinema Wave 4K" data-sub="Lossless Stream">
+              <img src="https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=700&q=80" alt="Cinema Wave 4K" class="cylinder-img">
+              <div class="cylinder-card-overlay">
+                <span class="cylinder-card-badge">4K MASTER</span>
+                <h4 class="cylinder-card-title">Cinema Wave 4K</h4>
+                <p class="cylinder-card-sub">Ultra-Definition Stream</p>
+              </div>
+            </div>
+            <div class="cylinder-card" style="--card-index: 2;" data-title="Retro Cassette Analog" data-sub="Vintage Tape Tone">
+              <img src="https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=700&q=80" alt="Retro Cassette" class="cylinder-img">
+              <div class="cylinder-card-overlay">
+                <span class="cylinder-card-badge">ANALOG TAPE</span>
+                <h4 class="cylinder-card-title">Nova Cassette</h4>
+                <p class="cylinder-card-sub">Vintage Tape Saturation</p>
+              </div>
+            </div>
+            <div class="cylinder-card" style="--card-index: 3;" data-title="Quantum Soundscape" data-sub="Sub-Bass 32-Bit">
+              <img src="https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?auto=format&fit=crop&w=700&q=80" alt="Quantum Sound" class="cylinder-img">
+              <div class="cylinder-card-overlay">
+                <span class="cylinder-card-badge">QUANTUM DSP</span>
+                <h4 class="cylinder-card-title">Quantum Horizon</h4>
+                <p class="cylinder-card-sub">32-Bit Float Acoustics</p>
+              </div>
+            </div>
+            <div class="cylinder-card" style="--card-index: 4;" data-title="Acoustic Orbit" data-sub="HRTF Spatial Sound">
+              <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=700&q=80" alt="Acoustic Orbit" class="cylinder-img">
+              <div class="cylinder-card-overlay">
+                <span class="cylinder-card-badge">HRTF MATRIX</span>
+                <h4 class="cylinder-card-title">Acoustic Orbit</h4>
+                <p class="cylinder-card-sub">360° Spherical Pan</p>
+              </div>
+            </div>
+            <div class="cylinder-card" style="--card-index: 5;" data-title="Master Studio Cut" data-sub="Uncompressed Master">
+              <img src="https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=700&q=80" alt="Master Studio" class="cylinder-img">
+              <div class="cylinder-card-overlay">
+                <span class="cylinder-card-badge">STUDIO GRADE</span>
+                <h4 class="cylinder-card-title">Master Studio Cut</h4>
+                <p class="cylinder-card-sub">Direct Acoustic Pipeline</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cylinder-nav-controls">
+          <button class="cylinder-btn" id="cyl-prev" aria-label="Previous Slide">‹</button>
+          <div class="cylinder-drag-hint">
+            <span class="cylinder-hint-dot"></span>
+            <span>CLICK &amp; DRAG TO ROTATE 360°</span>
+          </div>
+          <button class="cylinder-btn" id="cyl-next" aria-label="Next Slide">›</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ravi Katiyar: Animated Feature Card 1 Showcase Section -->
+    <section class="features-showcase-section" id="features">
+      <div class="features-section-header">
+        <div class="studio-tag-pill">ARCHITECTURAL SPECIFICATIONS</div>
+        <h2 class="studio-title">Engineered For Acoustic Perfection</h2>
+        <p class="studio-sub">Experience the next paradigm of high-fidelity spatial media conversion.</p>
+      </div>
+
+      <div class="features-showcase-grid feature-cards-3d-grid">
+        <div class="feature-card-1-item" data-accent="#00f0ff">
+          <div class="fc1-ambient-spotlight"></div>
+          <div class="fc1-inner">
+            <div class="fc1-header">
+              <div class="fc1-icon-box" style="color: #00f0ff;">🎧</div>
+              <span class="fc1-chip">BINAURAL</span>
+            </div>
+            <div class="fc1-body">
+              <h3 class="fc1-title">8D &amp; 16D Binaural Engine</h3>
+              <p class="fc1-desc">Simulates dynamic head-related impulse responses with smooth 360-degree orbital sound diffusion across dual acoustic axes.</p>
+            </div>
+            <div class="fc1-footer">
+              <span class="fc1-meta-label">PRECISION</span>
+              <span class="fc1-meta-val" style="color: #00f0ff;">32-Bit Float HRTF</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card-1-item" data-accent="#f59e0b">
+          <div class="fc1-ambient-spotlight"></div>
+          <div class="fc1-inner">
+            <div class="fc1-header">
+              <div class="fc1-icon-box" style="color: #f59e0b;">⚡</div>
+              <span class="fc1-chip">INGESTION</span>
+            </div>
+            <div class="fc1-body">
+              <h3 class="fc1-title">Zero-Buffer Stream Extraction</h3>
+              <p class="fc1-desc">Instant YouTube video analysis and metadata resolution with client-side audio rendering and rapid download generation.</p>
+            </div>
+            <div class="fc1-footer">
+              <span class="fc1-meta-label">LATENCY</span>
+              <span class="fc1-meta-val" style="color: #f59e0b;">&lt; 150ms Telemetry</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card-1-item" data-accent="#ec4899">
+          <div class="fc1-ambient-spotlight"></div>
+          <div class="fc1-inner">
+            <div class="fc1-header">
+              <div class="fc1-icon-box" style="color: #ec4899;">💎</div>
+              <span class="fc1-chip">AUDIOPHILE</span>
+            </div>
+            <div class="fc1-body">
+              <h3 class="fc1-title">Master Grade Soundstage</h3>
+              <p class="fc1-desc">Uncompressed WAV audio up to 1411kbps, pristine MP3 at 320kbps CBR, and crystal-clear MP4 video up to 4K 60FPS.</p>
+            </div>
+            <div class="fc1-footer">
+              <span class="fc1-meta-label">FIDELITY</span>
+              <span class="fc1-meta-val" style="color: #ec4899;">1411 kbps Lossless</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="feature-card-1-item" data-accent="#10b981">
+          <div class="fc1-ambient-spotlight"></div>
+          <div class="fc1-inner">
+            <div class="fc1-header">
+              <div class="fc1-icon-box" style="color: #10b981;">🛡️</div>
+              <span class="fc1-chip">PRIVACY</span>
+            </div>
+            <div class="fc1-body">
+              <h3 class="fc1-title">Zero Telemetry Retention</h3>
+              <p class="fc1-desc">End-to-end sandbox conversion. No tracking, no permanent server storage, and zero telemetry retention.</p>
+            </div>
+            <div class="fc1-footer">
+              <span class="fc1-meta-label">SECURITY</span>
+              <span class="fc1-meta-val" style="color: #10b981;">100% Client Protected</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Application Footer -->
+    <footer class="app-footer">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <span class="brand-name">SONICFLOW</span>
+          <span class="footer-tagline">Turn Video Into A New Sound</span>
+        </div>
+        <div class="footer-links">
+          <a href="#converter">Converter</a>
+          <a href="#studio">Studio</a>
+          <a href="#features">Features</a>
+          <a href="https://dribbble.com/shots/25961667-Retro-Futuristic-Website-Concept-for-a-Cassette-Player" target="_blank" rel="noopener">Concept by Zajno</a>
+        </div>
+        <div class="footer-copy">© 2026 SonicFlow Spatial Engine. All rights reserved.</div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- =========================================================================
+       SCREEN 2: IMMERSIVE FULL-SCREEN CINEMATIC CONVERSION CHAMBER
+       (Exact Match to the Lower Half of Reference Image)
+       ========================================================================= -->
+  <div class="processing-chamber" id="processing-chamber">
+    <!-- Chamber Canvas & Artwork Backdrop -->
+    <div class="chamber-artwork-backdrop">
+      <img src="assets/chamber_bg.jpg" alt="Chamber Atmosphere" class="chamber-bg-img">
+      <canvas id="chamber-canvas"></canvas>
+      <div class="chamber-vignette"></div>
+    </div>
+
+    <!-- Chamber Top Navigation Header -->
+    <div class="chamber-header">
+      <!-- Left: Logo -->
+      <a href="#hero-stream-section" class="brand-logo milkinside-brand-logo chamber-logo-link" id="chamber-brand-logo" title="Return to Home">
+        <div class="milkinside-logo-mark header-mark">
+          <div class="ms-glow-backdrop"></div>
+          <svg class="milkinside-svg" viewBox="0 0 71 45" fill="none">
+            <path class="ms-facet ms-facet-left" d="M0,0 H31.18 L21.35,44.86 H0 Z" fill="url(#hdr-ms-grad-1)"/>
+            <path class="ms-facet ms-facet-center" d="M31.18,0 L36.33,22.19 L41.01,0 L47.85,19.98 L42.12,44.86 H27.20 L21.35,20.10 Z" fill="url(#hdr-ms-grad-2)"/>
+            <path class="ms-facet ms-facet-right" d="M41.01,0 H70.49 V44.86 H47.97 L41.01,0 Z" fill="url(#hdr-ms-grad-1)"/>
+            <path class="ms-facet-master" d="M70.4901 8.97164V0.000244141H41.0069L36.3271 22.1895C36.3271 22.2294 36.3076 22.2692 36.2686 22.3091H36.2101V22.1895C35.6641 19.7174 35.0986 17.2453 34.5137 14.7731C33.9677 12.301 33.4217 9.84885 32.8757 7.4166C32.3297 4.94448 31.7643 2.47236 31.1793 0.000244141H0V4.42613V8.79221V17.8234V26.8546V35.8858V44.8572H21.3517V32.4767V20.156V20.0962H21.4101C21.4492 20.0962 21.4686 20.1161 21.4686 20.156C22.4436 24.2629 23.3991 28.3698 24.335 32.4767C25.271 36.5836 26.2265 40.7104 27.2014 44.8572H42.1184L47.8512 19.9766V19.9167H47.9096C47.9486 19.9167 47.9681 19.9367 47.9681 19.9766V32.4169V44.8572H70.4901V35.8858V26.9144V17.943V8.97164Z" fill="none" stroke="url(#hdr-ms-shimmer)" stroke-width="1.6" class="ms-shimmer-stroke"/>
+          </svg>
+        </div>
+        <span class="brand-name">SONICFLOW</span>
+      </a>
+
+      <!-- Center: Nav Items -->
+      <nav class="chamber-nav-links">
+        <a href="#hero-stream-section" class="nav-item" id="chamber-nav-home">Home</a>
+        <a href="#converter" class="nav-item active" id="chamber-nav-converter">Converter</a>
+        <a href="#studio" class="nav-item" id="chamber-nav-studio">Audio Studio</a>
+        <a href="#features" class="nav-item" id="chamber-nav-features">Features</a>
+        <div class="nav-dropdown" id="chamber-nav-dropdown">
+          <button class="nav-item dropdown-toggle" id="chamber-dropdown-toggle" type="button" aria-expanded="false" aria-haspopup="true">More ▾</button>
+          <div class="nav-dropdown-menu" id="chamber-dropdown-menu">
+            <a href="#gallery" class="dropdown-link" id="chamber-drop-gallery">
+              <span class="drop-icon">🎬</span>
+              <span>Cinema 3D Showcase</span>
+            </a>
+            <a href="#signin-modal" class="dropdown-link" id="chamber-drop-pass">
+              <span class="drop-icon">🎫</span>
+              <span>Cinema Pass &amp; VIP</span>
+            </a>
+            <button class="dropdown-link" type="button" id="chamber-drop-ambient">
+              <span class="drop-icon">✨</span>
+              <span>Toggle Background Video</span>
+            </button>
+            <button class="dropdown-link" type="button" id="chamber-drop-replay">
+              <span class="drop-icon">🔄</span>
+              <span>Replay Intro Experience</span>
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <!-- Right: Toggle & Exit -->
+      <div class="chamber-header-actions">
+        <div class="chamber-switch-toggle" title="Spatial Mode Enabled">
+          <span class="toggle-thumb"></span>
+        </div>
+        <div class="chamber-avatar" title="User Profile">
+          <span>🎧</span>
+        </div>
+        <button class="btn-chamber-exit" id="btn-chamber-exit" title="Cancel or Exit Chamber">✕ ABORT</button>
+      </div>
+    </div>
+
+    <!-- 3-Column Floating Spatial Workspace (Exact Reference Composition!) -->
+    <div class="chamber-stage">
+      <!-- Left Floating Glass Card: Video Information (The Weeknd / Analyzed Stream) -->
+      <div class="chamber-floating-card left-panel" id="chamber-card-left">
+        <!-- 3D Floating Media Object in Conversion Chamber -->
+        <div class="chamber-thumb-wrap chamber-fmo-wrap" id="chamber-fmo-wrap">
+          <div class="fmo-chassis chamber-fmo-chassis" id="chamber-fmo-chassis">
+            <div class="fmo-depth depth-back"></div>
+            <div class="fmo-depth depth-mid"></div>
+            <div class="fmo-depth depth-edge-glow"></div>
+            <div class="fmo-front-face">
+              <img src="https://img.youtube.com/vi/4NRXx6U8ABQ/hqdefault.jpg" alt="Video Thumbnail" class="chamber-thumb-img" id="chamber-thumb">
+              <div class="fmo-glass-shield"></div>
+              <div class="fmo-specular-reflection" id="chamber-specular"></div>
+              <div class="thumb-play-overlay">
+                <div class="play-glass-circle">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="6 3 20 12 6 21 6 3"></polygon>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="fmo-elevation-shadow chamber-fmo-shadow" id="chamber-elevation-shadow"></div>
+        </div>
+
+        <div class="chamber-card-meta">
+          <h2 class="chamber-media-title" id="chamber-title">The Weeknd – Blinding Lights</h2>
+          
+          <div class="chamber-channel-row">
+            <span class="yt-badge-red">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="#FF0000">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.5 12 3.5 12 3.5s-7.505 0-9.377.55a3.016 3.016 0 0 0-2.122 2.136C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.55 9.376.55 9.376.55s7.505 0 9.377-.55a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z"/>
+              </svg>
+            </span>
+            <span class="chamber-channel-name" id="chamber-channel">The Weeknd</span>
+          </div>
+
+          <div class="chamber-stats-row">
+            <div class="stat-col">
+              <span class="stat-label">Duration</span>
+              <span class="stat-value" id="chamber-duration">3:23</span>
+            </div>
+            <div class="stat-col">
+              <span class="stat-label">Views</span>
+              <span class="stat-value" id="chamber-views">3.1B</span>
+            </div>
+            <div class="stat-badge-4k">4K</div>
+          </div>
+        </div>
+
+        <div class="stream-beam-origin" id="stream-beam-origin"></div>
+      </div>
+
+      <!-- Centerpiece: Luminous Circular Vortex / Progress Ring (Exact Reference Match!) -->
+      <div class="chamber-orb-centerpiece">
+        <div class="vortex-visual-container" id="orb-anchor">
+          <!-- Animated Luminous Outer Ring -->
+          <div class="vortex-outer-ring"></div>
+          <div class="vortex-inner-blur"></div>
+
+          <!-- Center Content: Percentage & Live Pulsing Waveform -->
+          <div class="vortex-center-content" id="vortex-center-content">
+            <span class="vortex-converting-label">Converting</span>
+            
+            <div class="vortex-huge-percent" id="chamber-percent">68%</div>
+
+            <!-- Pulsing Soundwave Bars -->
+            <div class="vortex-wave-bars" id="vortex-wave-bars">
+              <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+              <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+              <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+              <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+              <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+              <span class="v-bar"></span><span class="v-bar"></span><span class="v-bar"></span>
+            </div>
+            <canvas id="chamber-wave" width="140" height="24" style="display: none;"></canvas>
+
+            <div class="vortex-status-msg" id="chamber-status">Creating your audio...</div>
+            <div class="vortex-status-sub">This may take a few moments.</div>
+            <div id="chamber-mode-badge" style="display: none;">8D AUDIO</div>
+          </div>
+
+          <!-- Download Ready Capsule (Replaces inside of ring or overlays when 100% is reached) -->
+          <div class="chamber-success-capsule" id="chamber-success-capsule" style="display: none;">
+            <div class="success-crystal-glow"></div>
+            <div class="success-crystal-icon">💎</div>
+            <div class="success-headline">SYNTHESIS COMPLETE</div>
+            <div class="success-sub">Lossless Spatial Media Ready for Download</div>
+
+            <!-- In-Chamber Download Customization Options -->
+            <div class="chamber-dl-config-box">
+              <div class="chamber-dl-row">
+                <span class="chamber-dl-label">Format:</span>
+                <div class="chamber-pill-toggle">
+                  <button type="button" class="ch-pill active" id="ch-fmt-mp3" data-format="MP3">MP3</button>
+                  <button type="button" class="ch-pill" id="ch-fmt-mp4" data-format="MP4">MP4</button>
+                </div>
+              </div>
+
+              <div class="chamber-dl-row">
+                <span class="chamber-dl-label">Audio Effect:</span>
+                <div class="chamber-pill-toggle">
+                  <button type="button" class="ch-pill" id="ch-eff-off" data-mode="OFF">Off</button>
+                  <button type="button" class="ch-pill active" id="ch-eff-8d" data-mode="8D">8D</button>
+                  <button type="button" class="ch-pill" id="ch-eff-16d" data-mode="16D">16D</button>
+                </div>
+              </div>
+
+              <div class="chamber-dl-row">
+                <span class="chamber-dl-label">Quality:</span>
+                <div class="chamber-pill-toggle" id="ch-pills-mp3">
+                  <button type="button" class="ch-pill" data-quality="128 kbps">128k</button>
+                  <button type="button" class="ch-pill" data-quality="192 kbps">192k</button>
+                  <button type="button" class="ch-pill active" data-quality="320 kbps">320k</button>
+                </div>
+                <div class="chamber-pill-toggle" id="ch-pills-mp4" style="display: none;">
+                  <button type="button" class="ch-pill" data-quality="720p HD">720p</button>
+                  <button type="button" class="ch-pill" data-quality="1080p FHD">1080p</button>
+                  <button type="button" class="ch-pill" data-quality="1440p QHD">1440p</button>
+                  <button type="button" class="ch-pill active" data-quality="4K UHD">4K UHD</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="success-actions">
+              <button class="btn-chamber-download" id="btn-chamber-download">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>Download MP3 (320 kbps) • 8D Audio ↓</span>
+              </button>
+              
+              <button class="btn-chamber-preview" id="btn-chamber-preview-action">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                </svg>
+                <span>Play Spatial Audio Preview</span>
+              </button>
+
+              <button class="btn-chamber-return" id="btn-chamber-return">
+                Convert Another Video
+              </button>
+            </div>
+          </div>
+
+          <!-- Error Capsule -->
+          <div class="chamber-error-capsule" id="chamber-error-capsule" style="display: none;">
+            <div class="error-icon">⚠️</div>
+            <div class="error-headline">CONVERSION ENCOUNTERED ISSUE</div>
+            <div class="error-sub" id="chamber-error-msg">Stream decoding interrupted.</div>
+            <button class="btn-chamber-retry" id="btn-chamber-retry">Retry Conversion</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Floating Glass Card: Format, Effect, Estimated Time (Interactive Selectors) -->
+      <div class="chamber-floating-card right-panel" id="chamber-card-right">
+        <div class="chamber-specs-header">
+          <span class="specs-title">Download Configuration</span>
+          <span class="specs-sub-badge">Upto 4K</span>
+        </div>
+        <div class="chamber-specs-list">
+          <!-- Row 1: Format -->
+          <div class="chamber-spec-item">
+            <div class="spec-icon-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18V5l12-2v13"></path>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="16" r="3"></circle>
+              </svg>
+            </div>
+            <div class="spec-text-block">
+              <span class="spec-label">Format</span>
+              <div class="spec-val-row">
+                <span class="spec-val" id="chamber-spec-format">MP3 (320 kbps)</span>
+              </div>
+              <div class="chamber-spec-pills">
+                <button type="button" class="ch-spec-pill active" id="ch-spec-fmt-mp3" data-format="MP3">MP3</button>
+                <button type="button" class="ch-spec-pill" id="ch-spec-fmt-mp4" data-format="MP4">MP4</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 2: Audio Effect -->
+          <div class="chamber-spec-item">
+            <div class="spec-icon-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="16" x2="6" y2="8"></line>
+                <line x1="18" y1="16" x2="18" y2="8"></line>
+              </svg>
+            </div>
+            <div class="spec-text-block">
+              <span class="spec-label">Audio Effect</span>
+              <div class="spec-val-row">
+                <span class="spec-val highlight" id="chamber-spec-mode">8D Audio</span>
+              </div>
+              <div class="chamber-spec-pills">
+                <button type="button" class="ch-spec-pill" id="ch-spec-eff-off" data-mode="OFF">Off</button>
+                <button type="button" class="ch-spec-pill active" id="ch-spec-eff-8d" data-mode="8D">8D</button>
+                <button type="button" class="ch-spec-pill" id="ch-spec-eff-16d" data-mode="16D">16D</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Row 3: Quality -->
+          <div class="chamber-spec-item">
+            <div class="spec-icon-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </div>
+            <div class="spec-text-block">
+              <span class="spec-label">Quality Preset</span>
+              <div class="spec-val-row">
+                <span class="spec-val" id="chamber-spec-quality">320 kbps (Master)</span>
+              </div>
+              <div class="chamber-spec-pills" id="chamber-quality-pills-mp3">
+                <button type="button" class="ch-spec-pill" data-quality="128 kbps">128k</button>
+                <button type="button" class="ch-spec-pill" data-quality="192 kbps">192k</button>
+                <button type="button" class="ch-spec-pill active" data-quality="320 kbps">320k</button>
+              </div>
+              <div class="chamber-spec-pills" id="chamber-quality-pills-mp4" style="display: none;">
+                <button type="button" class="ch-spec-pill" data-quality="720p HD">720p</button>
+                <button type="button" class="ch-spec-pill" data-quality="1080p FHD">1080p</button>
+                <button type="button" class="ch-spec-pill" data-quality="1440p QHD">1440p</button>
+                <button type="button" class="ch-spec-pill active" data-quality="4K UHD">4K UHD</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: none;">
+          <span id="chamber-spec-size">8.4 MB</span>
+          <span id="chamber-spec-time">~ 10 seconds</span>
+        </div>
+        <div class="stream-beam-target" id="stream-beam-target"></div>
+      </div>
+    </div>
+
+    <!-- Bottom Horizontal Stepper Timeline (Exact Reference Match!) -->
+    <div class="chamber-bottom-footer">
+      <div class="chamber-stage-timeline">
+        <div class="stage-node completed" id="stage-node-1">
+          <span class="stage-dot">✓</span>
+          <span class="stage-name">Analyzed</span>
+          <span class="stage-line"></span>
+        </div>
+        <div class="stage-node active" id="stage-node-2">
+          <span class="stage-dot"></span>
+          <span class="stage-name">Processing</span>
+          <span class="stage-line"></span>
+        </div>
+        <div class="stage-node" id="stage-node-3">
+          <span class="stage-dot"></span>
+          <span class="stage-name">Optimizing</span>
+          <span class="stage-line"></span>
+        </div>
+        <div class="stage-node" id="stage-node-4">
+          <span class="stage-dot"></span>
+          <span class="stage-name">Finalizing</span>
+        </div>
+      </div>
+
+      <!-- Bottom Cinematic Quote (Exact Reference Match!) -->
+      <div class="chamber-quote">
+        “Good music doesn't just play,<br>
+        it surrounds you.”
+      </div>
+    </div>
+  </div>
+
+  <!-- Sign In & Studio Cinema Authentication Modal (Dribbble Movie Website Exploration) -->
+  <div class="modal-backdrop" id="signin-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card modal-card-movie-split auth-ui-split-card">
+      <button class="modal-close-btn" id="btn-close-signin" aria-label="Close dialog">✕</button>
+
+      <!-- Left: Auth Form Container (350px centered form) -->
+      <div class="modal-movie-form-side auth-ui-form-side">
+        <div class="auth-form-container">
+          <div class="modal-header auth-form-header">
+            <h1 class="modal-title auth-main-title" id="signin-title">Sign in to your account</h1>
+            <p class="modal-sub auth-main-sub" id="signin-sub">Enter your email below to sign in</p>
+          </div>
+
+          <form class="modal-form auth-main-form" id="signin-form" onsubmit="event.preventDefault();" novalidate>
+            <!-- Full Name (Register Mode Only) -->
+            <div class="form-group auth-field-register" id="group-signup-name">
+              <label for="signup-name">Full Name</label>
+              <div class="form-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <input type="text" id="signup-name" placeholder="John Doe" autocomplete="name">
+              </div>
+            </div>
+
+            <!-- Email Field -->
+            <div class="form-group" id="group-email">
+              <label for="signin-email" id="label-email">Email</label>
+              <div class="form-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <input type="email" id="signin-email" placeholder="m@example.com" value="director@cinemawave.io" required autocomplete="email">
+              </div>
+            </div>
+
+            <!-- Password Field -->
+            <div class="form-group" id="group-password">
+              <div class="form-label-row">
+                <label for="signin-password" id="label-password">Password</label>
+                <a href="#" class="form-forgot-link auth-field-signin" id="link-forgot-pw">Forgot password?</a>
+              </div>
+              <div class="form-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <input type="password" id="signin-password" placeholder="Password" value="cinemaster2026" required autocomplete="current-password">
+                <button type="button" class="btn-toggle-pw" id="btn-toggle-pw" title="Show/Hide Password" aria-label="Toggle password visibility">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-eye">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Confirm Password (Register Mode Only) -->
+            <div class="form-group auth-field-register" id="group-signup-confirm">
+              <label for="signup-confirm-password">Confirm Password</label>
+              <div class="form-input-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+                <input type="password" id="signup-confirm-password" placeholder="Re-enter password" autocomplete="new-password">
+              </div>
+            </div>
+
+            <!-- Terms & Agreement (Register Mode Only) -->
+            <div class="form-remember-row auth-field-register" id="group-signup-terms">
+              <label class="movie-checkbox-label">
+                <input type="checkbox" id="signup-terms" checked>
+                <span class="custom-chk"></span>
+                <span class="chk-text">I agree to <a href="#" class="terms-link">Terms of Service</a> &amp; <a href="#" class="terms-link">Privacy</a></span>
+              </label>
+            </div>
+
+            <button type="submit" class="btn-modal-submit btn-movie-submit auth-submit-btn" id="btn-submit-signin">
+              <span id="signin-btn-label">Sign In</span>
+            </button>
+
+            <!-- Toggle Between Sign In & Sign Up -->
+            <div class="modal-footer-switch auth-toggle-footer">
+              <span id="auth-switch-text">Don't have an account?</span>
+              <button type="button" class="btn-link-auth-switch" id="btn-link-switch">Sign up</button>
+            </div>
+
+            <div class="modal-divider"><span>Or continue with</span></div>
+
+            <div class="movie-social-actions auth-social-actions">
+              <button type="button" class="btn-google-auth auth-google-btn" id="btn-google-signin">
+                <svg width="16" height="16" viewBox="0 0 24 24">
+                  <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.7l3.1-3.1C17.3 1.8 14.8 1 12 1 7.4 1 3.5 3.6 1.6 7.4l3.7 2.9C6.2 7.3 8.9 5 12 5z"/>
+                  <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.7-.2-2.3H12v4.6h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.9z"/>
+                  <path fill="#FBBC05" d="M5.3 14.7c-.2-.7-.4-1.5-.4-2.4s.2-1.7.4-2.4L1.6 7C.6 9 0 11 0 12.3s.6 3.3 1.6 5.3l3.7-2.9z"/>
+                  <path fill="#34A853" d="M12 23.6c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3.1 0-5.8-2.3-6.7-5.3L1.6 16.5C3.5 20.3 7.4 23.6 12 23.6z"/>
+                </svg>
+                <span>Continue with Google</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Right: Split Hero Cover Image with Typewriter Quote -->
+      <div class="modal-movie-art-side auth-ui-art-side" id="auth-image-panel">
+        <div class="auth-art-gradient"></div>
+        <div class="auth-quote-wrapper">
+          <blockquote class="auth-quote-block">
+            <p class="auth-quote-text">
+              “<span class="auth-typewriter-text" id="auth-typewriter-text">Welcome Back! The journey continues.</span><span class="auth-typewriter-cursor">|</span>”
+            </p>
+            <cite class="auth-quote-author" id="auth-quote-author">— EaseMize UI</cite>
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal -->
+  <div class="modal-backdrop" id="shortcuts-modal" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal-card modal-card-sm">
+      <button class="modal-close-btn" id="btn-close-shortcuts" aria-label="Close dialog">✕</button>
+      <div class="modal-header">
+        <div class="modal-badge">STUDIO KEYMAP</div>
+        <h2 class="modal-title">Keyboard Shortcuts</h2>
+      </div>
+      <div class="shortcuts-list">
+        <div class="shortcut-row"><span class="shortcut-action">Quick Paste YouTube URL</span><div class="kbd-wrap"><kbd>Ctrl</kbd> + <kbd>V</kbd></div></div>
+        <div class="shortcut-row"><span class="shortcut-action">Launch Conversion Chamber</span><div class="kbd-wrap"><kbd>Enter</kbd></div></div>
+        <div class="shortcut-row"><span class="shortcut-action">Play / Pause Cassette Tape</span><div class="kbd-wrap"><kbd>Space</kbd></div></div>
+        <div class="shortcut-row"><span class="shortcut-action">Fast Forward Tape</span><div class="kbd-wrap"><kbd>F</kbd></div></div>
+        <div class="shortcut-row"><span class="shortcut-action">Rewind Tape</span><div class="kbd-wrap"><kbd>R</kbd></div></div>
+        <div class="shortcut-row"><span class="shortcut-action">Close Chamber / Modal</span><div class="kbd-wrap"><kbd>Esc</kbd></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Capsule -->
+  <div class="toast-capsule" id="toast-capsule">
+    <span class="toast-icon">⚡</span>
+    <span class="toast-text" id="toast-text">System Ready</span>
+  </div>
+
+  <!-- Scripts -->
+  <script src="audioEngine.js"></script>
+  <script src="visualizer.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

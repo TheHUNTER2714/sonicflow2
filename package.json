@@ -1,0 +1,31 @@
+{
+  "name": "cinema-wave-auth",
+  "version": "1.0.0",
+  "description": "Cinema Wave with Shadcn Auth UI Integration",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-slot": "^1.1.2",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.4.7",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "three": "^0.174.0",
+    "tw-animate-css": "^1.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@types/three": "^0.174.0",
+    "tailwindcss": "^4.0.9",
+    "typescript": "^5.7.3"
+  }
+}
