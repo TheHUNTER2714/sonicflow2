@@ -163,10 +163,58 @@ function formatAndValidateCookies(raw) {
   return null;
 }
 
-function initCookies() {
+let cachedVerifiedCookiePath = null;
+let lastCookieCheckTime = 0;
+
+function initCookies(forceRecheck = false) {
+  const now = Date.now();
+  if (!forceRecheck && cachedVerifiedCookiePath && (now - lastCookieCheckTime < 10000)) {
+    if (fs.existsSync(cachedVerifiedCookiePath)) return cachedVerifiedCookiePath;
+  }
+  lastCookieCheckTime = now;
+
   const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
 
-  // 1. Raw text / JSON / Header cookies passed via env vars (Render Dashboard)
+  // Priority 1: Check existing cacheDir/youtube_cookies.txt (e.g. uploaded via /admin/cookies or API)
+  if (fs.existsSync(cookiePath)) {
+    try {
+      if (fs.statSync(cookiePath).size > 10) {
+        const content = fs.readFileSync(cookiePath, 'utf8');
+        const parsed = formatAndValidateCookies(content);
+        if (parsed && parsed.count > 0) {
+          cachedVerifiedCookiePath = cookiePath;
+          return cookiePath;
+        }
+      }
+    } catch (e) {}
+  }
+
+  // Priority 2: Render Secret Files & Project Files
+  const fileCandidates = [
+    '/etc/secrets/cookies.txt',
+    '/etc/secrets/youtube_cookies.txt',
+    '/etc/secrets/yt_cookies.txt',
+    path.join(__dirname, 'cookies.txt'),
+    path.join(__dirname, 'bin', 'cookies.txt')
+  ];
+  for (const c of fileCandidates) {
+    if (fs.existsSync(c)) {
+      try {
+        if (fs.statSync(c).size > 10) {
+          const raw = fs.readFileSync(c, 'utf8');
+          const parsed = formatAndValidateCookies(raw);
+          if (parsed && parsed.count > 0) {
+            fs.writeFileSync(cookiePath, parsed.content, 'utf8');
+            console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from file: ${c}`);
+            cachedVerifiedCookiePath = cookiePath;
+            return cookiePath;
+          }
+        }
+      } catch (e) {}
+    }
+  }
+
+  // Priority 3: Environment variables (YOUTUBE_COOKIES, YOUTUBE_COOKIES_BASE64)
   const rawEnvCookie = process.env.YOUTUBE_COOKIES || 
                        process.env.YOUTUBE_COOKIE || 
                        process.env.YT_COOKIES || 
@@ -179,19 +227,17 @@ function initCookies() {
       if (parsed && parsed.count > 0) {
         fs.writeFileSync(cookiePath, parsed.content, 'utf8');
         console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from environment variable`);
+        cachedVerifiedCookiePath = cookiePath;
         return cookiePath;
       } else {
-        // Discard unverified cookie values to prevent YouTube HTTP 429 rate limit blocks
         const preview = rawEnvCookie.replace(/[\r\n\t]+/g, ' ').slice(0, 40);
-        console.warn(`[yt-dlp] ⚠️ Environment cookie could not be verified (length: ${rawEnvCookie.length}, preview: "${preview}...") — ignoring to prevent HTTP 429 blocks`);
-        if (fs.existsSync(cookiePath)) try { fs.unlinkSync(cookiePath); } catch (e) {}
+        console.warn(`[yt-dlp] ⚠️ Environment cookie could not be verified (length: ${rawEnvCookie.length}, preview: "${preview}...") — ignoring to protect valid disk cookies`);
       }
     } catch (e) {
       console.warn('[yt-dlp] Failed to process cookie env var:', e.message);
     }
   }
 
-  // 2. Base64-encoded cookies passed via env vars
   const rawB64 = process.env.YOUTUBE_COOKIES_BASE64 || 
                  process.env.YT_COOKIES_BASE64 || 
                  process.env.COOKIES_BASE64;
@@ -203,40 +249,17 @@ function initCookies() {
       if (parsed && parsed.count > 0) {
         fs.writeFileSync(cookiePath, parsed.content, 'utf8');
         console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from BASE64 env var`);
+        cachedVerifiedCookiePath = cookiePath;
         return cookiePath;
       } else {
-        console.warn('[yt-dlp] ⚠️ BASE64 cookie could not be verified — ignoring to prevent HTTP 429 blocks');
-        if (fs.existsSync(cookiePath)) try { fs.unlinkSync(cookiePath); } catch (e) {}
+        console.warn('[yt-dlp] ⚠️ BASE64 cookie could not be verified — ignoring to protect valid disk cookies');
       }
     } catch (e) {
       console.warn('[yt-dlp] Failed to process BASE64 cookies:', e.message);
     }
   }
 
-  // 3. Render Secret Files & Standard candidate paths
-  const candidates = [
-    '/etc/secrets/cookies.txt',
-    '/etc/secrets/youtube_cookies.txt',
-    '/etc/secrets/yt_cookies.txt',
-    path.join(__dirname, 'cookies.txt'),
-    path.join(__dirname, 'bin', 'cookies.txt')
-  ];
-  for (const c of candidates) {
-    if (fs.existsSync(c)) {
-      try {
-        if (fs.statSync(c).size > 10) {
-          const raw = fs.readFileSync(c, 'utf8');
-          const parsed = formatAndValidateCookies(raw);
-          if (parsed && parsed.count > 0) {
-            fs.writeFileSync(cookiePath, parsed.content, 'utf8');
-            console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from file: ${c}`);
-            return cookiePath;
-          }
-        }
-      } catch (e) {}
-    }
-  }
-
+  cachedVerifiedCookiePath = null;
   return null;
 }
 
@@ -677,18 +700,22 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
     };
 
     const hasCookies = !!initCookies();
-    const primaryClient = hasCookies ? null : 'visionos';
+    const clientsToTry = hasCookies 
+      ? [null, 'mweb', 'ios', 'visionos', 'android']
+      : ['visionos', 'android', 'mweb', 'ios', null];
 
-    // Multi-tier client fallback: primary (visionos) -> android -> default/web
-    executeVideoDownload(primaryClient)
-      .catch((err1) => {
-        console.log(`[yt-dlp video] Primary client attempt failed (${err1.message.slice(0, 80)}), retrying with android...`);
-        return executeVideoDownload('android');
-      })
-      .catch((err2) => {
-        console.log(`[yt-dlp video] android client attempt failed (${err2.message.slice(0, 80)}), retrying with default client...`);
-        return executeVideoDownload(null);
-      })
+    let downloadAttempt = Promise.reject(new Error('Starting video client cascade'));
+    for (let i = 0; i < clientsToTry.length; i++) {
+      const client = clientsToTry[i];
+      downloadAttempt = downloadAttempt.catch((prevErr) => {
+        if (i > 0) {
+          console.log(`[yt-dlp video] Client attempt ${i} failed (${prevErr.message.slice(0, 80)}), trying ${client || 'default/web'}...`);
+        }
+        return executeVideoDownload(client);
+      });
+    }
+
+    downloadAttempt
       .then((fullPath) => {
         activeYtVideoDownloads.delete(key);
         resolve(fullPath);
@@ -720,9 +747,16 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
               .trim();
 
             console.log(`[Video Resilience Engine] Searching YouTube for alternative official video: "${cleanQuery}"...`);
-            const searchQuery = `ytsearch1:${cleanQuery} official video`;
-            
-            const searchPath = await executeVideoDownload('visionos', searchQuery);
+            const fallbackClient = hasCookies ? null : 'visionos';
+            let searchPath = null;
+            try {
+              searchPath = await executeVideoDownload(fallbackClient, `ytsearch1:${cleanQuery} official video`);
+            } catch (s1) {
+              try {
+                searchPath = await executeVideoDownload(fallbackClient, `ytsearch1:${cleanQuery}`);
+              } catch (s2) {}
+            }
+
             if (searchPath && fs.existsSync(searchPath)) {
               console.log('[Video Resilience Engine] ✓ Successfully acquired alternative video stream:', searchPath);
               activeYtVideoDownloads.delete(key);
@@ -735,6 +769,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
 
         activeYtVideoDownloads.delete(key);
         console.log('[yt-dlp video] Original video stream could not be extracted:', finalErr.message);
+        console.log('[yt-dlp video] 💡 Tip: You can activate YouTube cookies at /admin/cookies to bypass datacenter IP restrictions.');
         reject(finalErr);
       });
   });
@@ -1346,7 +1381,192 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // 4. Static Files Handler with range streaming
+  // 4. YouTube Engine Console & Cookie Management Endpoints
+  if (reqPath === '/admin/cookies' || reqPath === '/cookies') {
+    const adminPath = path.join(__dirname, 'cookies_admin.html');
+    if (fs.existsSync(adminPath)) {
+      streamFileWithRange(req, res, adminPath, 'text/html');
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Admin console template not found');
+    }
+    return;
+  }
+
+  if (reqPath === '/api/cookie-status') {
+    const verifiedPath = initCookies(true);
+    if (verifiedPath && fs.existsSync(verifiedPath)) {
+      try {
+        const raw = fs.readFileSync(verifiedPath, 'utf8');
+        const parsed = formatAndValidateCookies(raw);
+        const stats = fs.statSync(verifiedPath);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          active: true,
+          count: parsed ? parsed.count : 0,
+          type: parsed ? parsed.type : 'Netscape',
+          path: path.relative(__dirname, verifiedPath).replace(/\\/g, '/'),
+          modified: stats.mtime
+        }));
+        return;
+      } catch (e) {}
+    }
+
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      active: false,
+      count: 0,
+      path: 'assets/cache/youtube_cookies.txt',
+      message: 'No verified YouTube cookies active'
+    }));
+    return;
+  }
+
+  if ((reqPath === '/api/upload-cookies' || reqPath === '/api/set-cookies') && req.method === 'POST') {
+    try {
+      let rawBody = '';
+      let bytes = 0;
+      req.on('data', chunk => {
+        bytes += chunk.length;
+        if (bytes < 5 * 1024 * 1024) rawBody += chunk.toString();
+      });
+
+      req.on('end', () => {
+        let cookieText = '';
+        const cType = (req.headers['content-type'] || '').toLowerCase();
+
+        if (cType.includes('application/json')) {
+          try {
+            const j = JSON.parse(rawBody);
+            cookieText = j.cookies || j.data || j.content || (Array.isArray(j) ? JSON.stringify(j) : '');
+          } catch (e) {
+            cookieText = rawBody;
+          }
+        } else if (cType.includes('multipart/form-data')) {
+          const boundaryMatch = cType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);
+          const boundary = boundaryMatch ? (boundaryMatch[1] || boundaryMatch[2]) : null;
+          if (boundary) {
+            const parts = rawBody.split('--' + boundary);
+            for (const part of parts) {
+              if (part.includes('filename=') || part.includes('name="cookies"') || part.includes('name="file"')) {
+                const headerEnd = part.indexOf('\r\n\r\n');
+                if (headerEnd !== -1) {
+                  cookieText = part.substring(headerEnd + 4).replace(/\r\n--$/, '').trim();
+                  break;
+                }
+              }
+            }
+          }
+          if (!cookieText) cookieText = rawBody;
+        } else {
+          cookieText = rawBody;
+        }
+
+        const parsed = formatAndValidateCookies(cookieText);
+        if (parsed && parsed.count > 0) {
+          const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
+          fs.writeFileSync(cookiePath, parsed.content, 'utf8');
+
+          try {
+            fs.writeFileSync(path.join(__dirname, 'cookies.txt'), parsed.content, 'utf8');
+          } catch (e) {}
+
+          cachedVerifiedCookiePath = cookiePath;
+          lastCookieCheckTime = Date.now();
+          console.log(`[yt-dlp] ✓ Received & activated ${parsed.count} YouTube cookies (${parsed.type}) via Web Console/API`);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: true,
+            count: parsed.count,
+            type: parsed.type,
+            message: `Successfully verified and activated ${parsed.count} cookies`
+          }));
+        } else {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            success: false,
+            error: 'Could not find any valid YouTube cookies in the submitted content. Please ensure the file has rows for .youtube.com or is a valid JSON cookie array.'
+          }));
+        }
+      });
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    }
+    return;
+  }
+
+  if (reqPath === '/api/delete-cookies' && req.method === 'POST') {
+    const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
+    try {
+      if (fs.existsSync(cookiePath)) fs.unlinkSync(cookiePath);
+      cachedVerifiedCookiePath = null;
+      lastCookieCheckTime = 0;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'Cookies deleted successfully' }));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: e.message }));
+    }
+    return;
+  }
+
+  if (reqPath === '/api/test-video-extraction') {
+    const rawTarget = parsedUrl.searchParams.get('id') || 'S7v9J-ac7KM';
+    const match = rawTarget.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/) || rawTarget.match(/([\w-]{11})/);
+    const testVideoId = match ? match[1] : 'S7v9J-ac7KM';
+    const targetUrl = `https://www.youtube.com/watch?v=${testVideoId}`;
+
+    const ytdlpBin = getYtdlpBin();
+    if (!isBinaryAvailable(ytdlpBin)) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: 'yt-dlp binary is not installed or available on this system' }));
+      return;
+    }
+
+    const hasCookies = !!initCookies(true);
+    const clientMode = hasCookies ? null : 'visionos';
+    const args = [
+      ...getBaseYtdlpArgs(clientMode),
+      '-F',
+      targetUrl
+    ];
+
+    let stdout = '';
+    let stderr = '';
+    const proc = spawn(ytdlpBin, args);
+
+    const timeout = setTimeout(() => {
+      try { proc.kill('SIGKILL'); } catch (e) {}
+    }, 18000);
+
+    proc.stdout.on('data', d => { stdout += d.toString(); });
+    proc.stderr.on('data', d => { stderr += d.toString(); });
+
+    proc.on('close', (code) => {
+      clearTimeout(timeout);
+      const isOk = code === 0 || stdout.includes('1080p') || stdout.includes('720p') || stdout.includes('audio only') || stdout.includes('format(s)');
+      
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        success: isOk,
+        clientUsed: clientMode || 'authenticated/default',
+        cookiesActive: hasCookies,
+        raw: isOk ? stdout.slice(0, 4000) : (stderr || stdout).slice(0, 4000),
+        error: isOk ? null : (stderr.slice(-300).trim() || 'Process exited with error')
+      }));
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timeout);
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+    });
+    return;
+  }
+
+  // 5. Static Files Handler with range streaming
   let filePath = path.join(__dirname, reqPath === '/' ? 'index.html' : reqPath);
   streamFileWithRange(req, res, filePath);
 });
