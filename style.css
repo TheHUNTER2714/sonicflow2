@@ -5731,3 +5731,255 @@ body.mode-cosmic .bg-video-container {
   }
 }
 
+/* =========================================================================
+   YOUTUBE ENGINE AUTHENTICATION STATUS PILL (Dock Sub-Bar)
+   ========================================================================= */
+.dock-auth-status-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 640px;
+  animation: fadeIn 0.4s ease;
+}
+
+.dock-auth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  backdrop-filter: blur(12px);
+  padding: 5px 14px;
+  border-radius: 9999px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  transition: all 0.3s ease;
+}
+
+.dock-auth-pill:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);
+  background: rgba(15, 23, 42, 0.9);
+}
+
+.auth-status-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  display: inline-block;
+  animation: authDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes authDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 8px #10b981;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 0.75;
+    box-shadow: 0 0 14px #34d399;
+  }
+}
+
+.auth-status-label {
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+.auth-status-highlight {
+  font-weight: 600;
+  color: #38bdf8;
+}
+
+.auth-status-divider {
+  color: rgba(255, 255, 255, 0.2);
+  font-size: 10px;
+}
+
+.auth-status-link {
+  color: #a855f7;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 11px;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+}
+
+.auth-status-link:hover {
+  color: #c084fc;
+  text-decoration: underline;
+  transform: translateX(1px);
+}
+
+/* =========================================================================
+   DYNAMIC MASTER DOWNLOAD TIMER & STAGE PROGRESS HUD
+   ========================================================================= */
+.chamber-dl-progress-hud {
+  width: 100%;
+  background: rgba(10, 15, 30, 0.88);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 14px;
+  padding: 12px 16px;
+  margin-top: 10px;
+  margin-bottom: 6px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(56, 189, 248, 0.15);
+  animation: hudSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes hudSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dl-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+
+.dl-hud-stage-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.dl-hud-pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #00f0ff;
+  box-shadow: 0 0 10px #00f0ff;
+  animation: hudDotPulse 1.2s infinite ease-in-out;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes hudDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+    box-shadow: 0 0 8px #00f0ff;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.6;
+    box-shadow: 0 0 16px #38bdf8;
+  }
+}
+
+.dl-hud-stage-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: linear-gradient(90deg, #00f0ff, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.dl-hud-timer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 3px 9px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #38bdf8;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.dl-hud-timer-icon {
+  font-size: 11px;
+  animation: timerIconBob 1.5s ease infinite;
+}
+
+@keyframes timerIconBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1.5px); }
+}
+
+.dl-hud-timer-text {
+  font-family: var(--font-mono, monospace);
+  font-weight: 600;
+}
+
+.dl-hud-bar-container {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 9999px;
+  overflow: hidden;
+  position: relative;
+  margin: 6px 0;
+}
+
+.dl-hud-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #00f0ff 0%, #6366f1 50%, #ec4899 100%);
+  border-radius: 9999px;
+  transition: width 0.2s linear;
+  position: relative;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.8);
+}
+
+.dl-hud-bar-glow {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 14px;
+  background: rgba(255, 255, 255, 0.85);
+  filter: blur(2px);
+  border-radius: 9999px;
+  animation: glowShimmer 1s infinite alternate;
+}
+
+@keyframes glowShimmer {
+  from { opacity: 0.5; }
+  to { opacity: 1; }
+}
+
+.dl-hud-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.dl-hud-task-desc {
+  max-width: 82%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-hud-percent {
+  font-family: var(--font-mono, monospace);
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+

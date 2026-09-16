@@ -102,9 +102,48 @@ document.addEventListener('DOMContentLoaded', () => {
     spatialMode: '8D', // 'OFF' | '8D' | '16D'
     isProcessing: false,
     isDownloadReady: false,
+    isDownloadingMaster: false,
     renderedAudioBlob: null,
-    previewPlaying: false
+    previewPlaying: false,
+    backendCookiesActive: false,
+    backendCookiesCount: 0
   };
+
+  // Check Backend YouTube Cookie & Engine Authentication Status
+  async function checkBackendCookieAuth() {
+    try {
+      const apiBase = getApiBase();
+      const res = await fetch(`${apiBase}/api/cookie-status`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.active && data.count > 0) {
+          state.backendCookiesActive = true;
+          state.backendCookiesCount = data.count;
+          const statusText = document.getElementById('auth-status-text');
+          const pulseDot = document.getElementById('auth-status-pulse-dot');
+          if (statusText) statusText.textContent = `Authenticated (${data.count} Cookies Active)`;
+          if (pulseDot) {
+            pulseDot.style.background = '#10b981';
+            pulseDot.style.boxShadow = '0 0 10px #10b981';
+          }
+          console.log(`[SonicFlow] ✓ Backend YouTube engine authenticated with ${data.count} cookies (${data.source || 'active'})`);
+        } else {
+          const statusText = document.getElementById('auth-status-text');
+          const pulseDot = document.getElementById('auth-status-pulse-dot');
+          if (statusText) statusText.textContent = 'Standby (Click Console to Configure)';
+          if (pulseDot) {
+            pulseDot.style.background = '#f59e0b';
+            pulseDot.style.boxShadow = '0 0 10px #f59e0b';
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[SonicFlow] Cookie status query deferred:', e.message);
+    }
+  }
+
+  // Query engine auth on startup
+  checkBackendCookieAuth();
 
   // DOM Elements - Input & Navigation
   const urlContainer = document.getElementById('url-container');
@@ -248,6 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
       state.videoData.artist = 'YouTube Creator';
       state.videoData.duration = '03:45';
       state.videoData.views = '1.2M';
+
+      if (state.backendCookiesActive) {
+        showToast(`⚡ YouTube Engine active (${state.backendCookiesCount} cookies) • Instant authenticated session`, '🛡️');
+      }
 
       // Fetch oEmbed metadata (works with standard CORS without API key)
       try {
@@ -669,6 +712,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function closeChamber() {
+    stopDownloadTimerHUD();
+    state.isDownloadingMaster = false;
     state.isProcessing = false;
     if (processingChamber) processingChamber.classList.remove('active');
     chamberVisualizer.stop();
@@ -810,16 +855,111 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 
+  // =========================================================================
+  // 5C. MASTER DOWNLOAD COUNTDOWN TIMER & STAGE PROGRESS CONTROLLER
+  // =========================================================================
+  let downloadTimerInterval = null;
+
+  function stopDownloadTimerHUD() {
+    if (downloadTimerInterval) {
+      clearInterval(downloadTimerInterval);
+      downloadTimerInterval = null;
+    }
+  }
+
+  function startDownloadTimerHUD(totalSeconds, format, quality, effect) {
+    stopDownloadTimerHUD();
+    const hud = document.getElementById('chamber-dl-progress-hud');
+    const stageName = document.getElementById('dl-hud-stage-name');
+    const timerText = document.getElementById('dl-hud-timer-text');
+    const barFill = document.getElementById('dl-hud-bar-fill');
+    const taskDesc = document.getElementById('dl-hud-task-desc');
+    const percentEl = document.getElementById('dl-hud-percent');
+
+    if (!hud) return;
+    hud.style.display = 'block';
+
+    const startTime = Date.now();
+    const durationMs = totalSeconds * 1000;
+
+    const updateUI = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(0.97, elapsed / durationMs);
+      const remainingSecs = Math.max(0, Math.ceil((durationMs - elapsed) / 1000));
+      const pct = Math.round(progress * 100);
+
+      if (barFill) barFill.style.width = `${pct}%`;
+      if (percentEl) percentEl.textContent = `${pct}%`;
+
+      if (remainingSecs > 0) {
+        if (timerText) timerText.textContent = `~${remainingSecs}s remaining`;
+      } else {
+        if (timerText) timerText.textContent = `Starting transfer...`;
+      }
+
+      // Update button text with live countdown
+      if (btnChamberDownload && state.isDownloadingMaster) {
+        const btnSpan = btnChamberDownload.querySelector('span:not(.dl-spinner-ring)');
+        if (btnSpan) {
+          btnSpan.textContent = remainingSecs > 0
+            ? `Rendering ${effect} ${format} (${quality})... (~${remainingSecs}s left)`
+            : `Starting ${format} stream transfer...`;
+        }
+      }
+
+      // Dynamic Stages based on progress
+      if (progress < 0.28) {
+        if (stageName) stageName.textContent = 'Phase 1/4: Stream Acquisition';
+        if (taskDesc) taskDesc.textContent = 'Extracting authenticated video/audio streams via yt-dlp...';
+      } else if (progress < 0.58) {
+        if (stageName) stageName.textContent = 'Phase 2/4: Spatial Sound Engine';
+        if (taskDesc) taskDesc.textContent = `Synthesizing ${effect} binaural positioning audio...`;
+      } else if (progress < 0.88) {
+        if (stageName) stageName.textContent = 'Phase 3/4: FFmpeg Master Encoding';
+        if (taskDesc) taskDesc.textContent = `Multiplexing H.264 video & audio master (${format} • ${quality})...`;
+      } else {
+        if (stageName) stageName.textContent = 'Phase 4/4: Transfer Finalization';
+        if (taskDesc) taskDesc.textContent = 'Buffering stream payload directly to browser download shelf...';
+      }
+    };
+
+    updateUI();
+    downloadTimerInterval = setInterval(updateUI, 200);
+  }
+
+  function completeDownloadTimerHUD(format) {
+    stopDownloadTimerHUD();
+    const hud = document.getElementById('chamber-dl-progress-hud');
+    const stageName = document.getElementById('dl-hud-stage-name');
+    const timerText = document.getElementById('dl-hud-timer-text');
+    const barFill = document.getElementById('dl-hud-bar-fill');
+    const taskDesc = document.getElementById('dl-hud-task-desc');
+    const percentEl = document.getElementById('dl-hud-percent');
+
+    if (barFill) barFill.style.width = '100%';
+    if (percentEl) percentEl.textContent = '100%';
+    if (stageName) stageName.textContent = '✓ Download Dispatched';
+    if (timerText) timerText.textContent = 'Ready!';
+    if (taskDesc) taskDesc.textContent = `Master ${format} stream initiated! Check your browser downloads ↓`;
+
+    setTimeout(() => {
+      if (hud) hud.style.display = 'none';
+      if (barFill) barFill.style.width = '0%';
+    }, 8000);
+  }
+
   // Chamber Download Button - Directly triggers FFmpeg Master Audio/Video generation
   if (btnChamberDownload) {
     btnChamberDownload.addEventListener('click', async () => {
-      const isMp4 = state.formatType.toUpperCase() === 'MP4';
-      showToast(isMp4 ? 'Processing original music video with spatial audio...' : 'Processing original song with spatial sound engine...', isMp4 ? '🎬' : '⚡');
+      if (state.isDownloadingMaster) return;
       triggerServerDownload();
     });
   }
 
   async function triggerServerDownload() {
+    if (state.isDownloadingMaster) return;
+    state.isDownloadingMaster = true;
+
     const isMp4 = state.formatType.toUpperCase() === 'MP4';
     const ext = isMp4 ? 'mp4' : 'mp3';
     const qualityTag = state.quality.replace(/[^a-zA-Z0-9]/g, '');
@@ -840,19 +980,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const downloadUrl = `${apiBase}/api/download-original?url=${encodeURIComponent(targetAudioParam)}&title=${encodeURIComponent(cleanTitle)}&effect=${encodeURIComponent(effectTag)}&quality=${encodeURIComponent(qualityTag)}&format=${encodeURIComponent(ext)}`;
 
+    // Calculate expected processing duration based on format
+    // MP4 involves full high-res video acquisition + FFmpeg H.264 muxing (~18s)
+    // MP3 involves audio stream extraction + spatial processing (~6s)
+    const estimatedSeconds = isMp4 ? 18 : 6;
+
     // 1. Visual Loading State on Chamber Download Button
     if (btnChamberDownload) {
       btnChamberDownload.disabled = true;
       btnChamberDownload.classList.add('btn-download-loading');
       btnChamberDownload.innerHTML = `
         <span class="dl-spinner-ring"></span>
-        <span>Rendering ${effectTag} ${ext.toUpperCase()} Master (${qualityTag})...</span>
+        <span>Rendering ${effectTag} ${ext.toUpperCase()} Master (${qualityTag})... (~${estimatedSeconds}s left)</span>
       `;
     }
 
-    showToast(isMp4 ? `🎬 Rendering ${qualityTag} MP4 with ${effectTag} spatial audio...` : `⚡ Rendering studio master ${ext.toUpperCase()} (${qualityTag})...`, isMp4 ? '🎬' : '⚡');
+    showToast(isMp4 ? `🎬 Rendering ${qualityTag} MP4 with ${effectTag} spatial audio (~${estimatedSeconds}s)...` : `⚡ Rendering studio master ${ext.toUpperCase()} (${qualityTag}) (~${estimatedSeconds}s)...`, isMp4 ? '🎬' : '⚡');
 
-    // 2. Direct Native Streaming Download Trigger
+    // 2. Start Visual Countdown Timer & Stage Progress HUD
+    startDownloadTimerHUD(estimatedSeconds, ext.toUpperCase(), qualityTag, effectTag);
+
+    // 3. Direct Native Streaming Download Trigger
     // Using hidden iframe ensures browser native download manager streams directly to disk
     // with 0 JS heap memory bloat, native download shelf progress, and zero timeout drops!
     try {
@@ -876,25 +1024,29 @@ document.addEventListener('DOMContentLoaded', () => {
         try { document.body.removeChild(a); } catch(e) {}
       }, 2000);
 
+      // On estimated completion, transition to complete state
       setTimeout(() => {
+        completeDownloadTimerHUD(ext.toUpperCase());
         if (btnChamberDownload) {
           btnChamberDownload.innerHTML = `
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="M20 6L9 17l-5-5"></path>
             </svg>
-            <span>Master Dispatched • Check Browser Downloads ↓</span>
+            <span>✓ Download Started • Check Browser Shelf ↓</span>
           `;
-          showToast(`✓ Master ${ext.toUpperCase()} download dispatched!`, '⚡');
+          showToast(`✓ Master ${ext.toUpperCase()} download started! Check your downloads shelf.`, '⚡');
         }
-      }, 3500);
+      }, estimatedSeconds * 1000);
 
+      // Restore button interactability after user has noticed download
       setTimeout(() => {
+        state.isDownloadingMaster = false;
         if (btnChamberDownload) {
           btnChamberDownload.disabled = false;
           btnChamberDownload.classList.remove('btn-download-loading');
           syncAllOptionsUI();
         }
-      }, 7500);
+      }, (estimatedSeconds + 6) * 1000);
 
     } catch (err) {
       console.warn('Native download dispatch error, using direct anchor:', err);
@@ -905,6 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
       a.click();
       setTimeout(() => {
         try { document.body.removeChild(a); } catch(e) {}
+        state.isDownloadingMaster = false;
         if (btnChamberDownload) {
           btnChamberDownload.disabled = false;
           btnChamberDownload.classList.remove('btn-download-loading');

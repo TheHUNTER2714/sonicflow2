@@ -495,6 +495,17 @@
           </div>
         </div>
 
+        <!-- YouTube Backend Authentication & Engine Status Pill -->
+        <div class="dock-auth-status-container" id="dock-auth-status-container">
+          <div class="dock-auth-pill" id="dock-auth-pill" title="YouTube Extraction Engine Status">
+            <span class="auth-status-pulse-dot" id="auth-status-pulse-dot"></span>
+            <span class="auth-status-label">YouTube Engine:</span>
+            <span class="auth-status-highlight" id="auth-status-text">Authenticated (24 Cookies Active)</span>
+            <span class="auth-status-divider">•</span>
+            <a href="/admin/cookies" target="_blank" class="auth-status-link" title="Open YouTube Engine & Authentication Console">Console ➔</a>
+          </div>
+        </div>
+
         <!-- 🧊 3D Floating Media Object (Physical Spatial Levitation Showcase) -->
         <div class="hero-floating-media-pedestal" id="hero-floating-media-pedestal">
           <div class="fmo-pedestal-glow"></div>
@@ -1264,6 +1275,31 @@
                 </svg>
                 <span>Download MP3 (320 kbps) • 8D Audio ↓</span>
               </button>
+
+              <!-- Dynamic Master Download Timer & Stage Matrix HUD -->
+              <div class="chamber-dl-progress-hud" id="chamber-dl-progress-hud" style="display: none;">
+                <div class="dl-hud-header">
+                  <div class="dl-hud-stage-indicator">
+                    <span class="dl-hud-pulse-dot"></span>
+                    <span class="dl-hud-stage-name" id="dl-hud-stage-name">Phase 1/4: Stream Acquisition</span>
+                  </div>
+                  <div class="dl-hud-timer-badge">
+                    <span class="dl-hud-timer-icon">⏳</span>
+                    <span class="dl-hud-timer-text" id="dl-hud-timer-text">~18s remaining</span>
+                  </div>
+                </div>
+
+                <div class="dl-hud-bar-container">
+                  <div class="dl-hud-bar-fill" id="dl-hud-bar-fill" style="width: 0%;">
+                    <div class="dl-hud-bar-glow"></div>
+                  </div>
+                </div>
+
+                <div class="dl-hud-footer">
+                  <span class="dl-hud-task-desc" id="dl-hud-task-desc">Ingesting high-bitrate media streams...</span>
+                  <span class="dl-hud-percent" id="dl-hud-percent">0%</span>
+                </div>
+              </div>
               
               <button class="btn-chamber-preview" id="btn-chamber-preview-action">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

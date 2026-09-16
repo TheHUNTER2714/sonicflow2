@@ -175,6 +175,26 @@ function initCookies(forceRecheck = false) {
 
   const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
 
+  // Priority 0: Synchronize bundled cookies.txt from repo root if present and newer or cache missing
+  const bundledCookie = path.join(__dirname, 'cookies.txt');
+  if (fs.existsSync(bundledCookie)) {
+    try {
+      const bundledStat = fs.statSync(bundledCookie);
+      const cacheExists = fs.existsSync(cookiePath);
+      const cacheStat = cacheExists ? fs.statSync(cookiePath) : null;
+      if (!cacheExists || bundledStat.mtimeMs > (cacheStat ? cacheStat.mtimeMs : 0)) {
+        const raw = fs.readFileSync(bundledCookie, 'utf8');
+        const parsed = formatAndValidateCookies(raw);
+        if (parsed && parsed.count > 0) {
+          fs.writeFileSync(cookiePath, parsed.content, 'utf8');
+          console.log(`[yt-dlp] ✓ Synchronized & verified ${parsed.count} YouTube cookies from bundled cookies.txt`);
+          cachedVerifiedCookiePath = cookiePath;
+          return cookiePath;
+        }
+      }
+    } catch (e) {}
+  }
+
   // Priority 1: Check existing cacheDir/youtube_cookies.txt (e.g. uploaded via /admin/cookies or API)
   if (fs.existsSync(cookiePath)) {
     try {
@@ -1422,11 +1442,13 @@ const server = http.createServer(async (req, res) => {
         const raw = fs.readFileSync(verifiedPath, 'utf8');
         const parsed = formatAndValidateCookies(raw);
         const stats = fs.statSync(verifiedPath);
+        const isBundled = fs.existsSync(path.join(__dirname, 'cookies.txt'));
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({
           active: true,
           count: parsed ? parsed.count : 0,
           type: parsed ? parsed.type : 'Netscape',
+          source: isBundled ? 'bundled_project' : 'uploaded_cache',
           path: path.relative(__dirname, verifiedPath).replace(/\\/g, '/'),
           modified: stats.mtime
         }));

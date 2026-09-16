@@ -1015,9 +1015,11 @@
           teleDot.className = 'status-dot active pulse';
           teleStatusText.textContent = 'Authenticated';
           teleStatusText.style.color = '#34d399';
-          teleStatusSub.textContent = 'YouTube datacenter bypass active';
+          teleStatusSub.textContent = data.source === 'bundled_project' 
+            ? 'Bundled in project repository (cookies.txt) • Auto-authenticated' 
+            : 'YouTube datacenter bypass active';
           teleCount.textContent = data.count + ' Cookies';
-          teleFormat.textContent = (data.type || 'Netscape') + ' format verified';
+          teleFormat.textContent = (data.type || 'Netscape') + (data.source === 'bundled_project' ? ' (Bundled)' : ' format verified');
         } else {
           teleDot.className = 'status-dot inactive';
           teleStatusText.textContent = 'Restricted';
