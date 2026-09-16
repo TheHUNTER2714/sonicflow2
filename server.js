@@ -182,7 +182,8 @@ function initCookies() {
         return cookiePath;
       } else {
         // Discard unverified cookie values to prevent YouTube HTTP 429 rate limit blocks
-        console.warn('[yt-dlp] ⚠️ Environment cookie could not be verified into Netscape/JSON format — ignoring to prevent HTTP 429 blocks');
+        const preview = rawEnvCookie.replace(/[\r\n\t]+/g, ' ').slice(0, 40);
+        console.warn(`[yt-dlp] ⚠️ Environment cookie could not be verified (length: ${rawEnvCookie.length}, preview: "${preview}...") — ignoring to prevent HTTP 429 blocks`);
         if (fs.existsSync(cookiePath)) try { fs.unlinkSync(cookiePath); } catch (e) {}
       }
     } catch (e) {
@@ -575,7 +576,7 @@ const activeYtVideoDownloads = new Map();
 /**
  * Downloads the actual original video stream from a YouTube URL using yt-dlp
  */
-function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
+function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = '') {
   const match = youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
   const videoId = match ? match[1] : crypto.createHash('md5').update(youtubeUrl).digest('hex').substring(0, 11);
 
@@ -617,7 +618,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
 
     const videoTemplate = path.join(cacheDir, `yt_v_${videoId}_${maxHeight}.%(ext)s`);
 
-    const executeVideoDownload = (clientMode = 'visionos') => {
+    const executeVideoDownload = (clientMode = 'visionos', targetUrl = youtubeUrl) => {
       return new Promise((resAttempt, rejAttempt) => {
         const args = [
           ...getBaseYtdlpArgs(clientMode),
@@ -625,10 +626,10 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
           '-o', videoTemplate,
           '--force-overwrites',
           '--no-mtime',
-          youtubeUrl
+          targetUrl
         ];
 
-        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode || 'authenticated/default'}):`, youtubeUrl);
+        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode || 'authenticated/default'}):`, targetUrl);
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
@@ -687,7 +688,46 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
         activeYtVideoDownloads.delete(key);
         resolve(fullPath);
       })
-      .catch((finalErr) => {
+      .catch(async (finalErr) => {
+        console.log(`[yt-dlp video] Direct video stream restricted on datacenter IP (${finalErr.message.slice(0, 80)}), activating Video Resilience Engine...`);
+
+        // Video Resilience Engine: Resolve authentic song title and search YouTube for unrestricted video stream
+        try {
+          let queryTitle = preferredTitle;
+          if (!queryTitle) {
+            try {
+              const oeRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+              if (oeRes.ok) {
+                const oData = await oeRes.json();
+                queryTitle = oData.title || '';
+              }
+            } catch (e) {}
+          }
+
+          if (queryTitle) {
+            const cleanQuery = queryTitle
+              .replace(/[\(\[\{].*?[\)\]\}]/g, '')
+              .replace(/Official\s*(?:Music\s*)?Video/gi, '')
+              .replace(/Full\s*Song/gi, '')
+              .replace(/8K|4K|1080p|720p|HD|Audio|Video/gi, '')
+              .replace(/[^a-zA-Z0-9\s]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+
+            console.log(`[Video Resilience Engine] Searching YouTube for alternative official video: "${cleanQuery}"...`);
+            const searchQuery = `ytsearch1:${cleanQuery} official video`;
+            
+            const searchPath = await executeVideoDownload('visionos', searchQuery);
+            if (searchPath && fs.existsSync(searchPath)) {
+              console.log('[Video Resilience Engine] ✓ Successfully acquired alternative video stream:', searchPath);
+              activeYtVideoDownloads.delete(key);
+              return resolve(searchPath);
+            }
+          }
+        } catch (sErr) {
+          console.log(`[Video Resilience Engine] Video search fallback failed: ${sErr.message.slice(0, 80)}`);
+        }
+
         activeYtVideoDownloads.delete(key);
         console.log('[yt-dlp video] Original video stream could not be extracted:', finalErr.message);
         reject(finalErr);
@@ -1098,7 +1138,7 @@ const server = http.createServer(async (req, res) => {
         if (isYouTube) {
           try {
             console.log(`[MP4] Fetching original video stream for ${targetUrlParam} at quality ${quality}...`);
-            videoInput = await downloadYouTubeVideo(targetUrlParam, quality);
+            videoInput = await downloadYouTubeVideo(targetUrlParam, quality, rawTitle || cleanTitle);
           } catch (vErr) {
             console.log(`[MP4] YouTube video stream extraction failed (${vErr.message}); generating spatial video with animated visualizer`);
           }
