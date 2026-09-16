@@ -15,8 +15,38 @@
 </a>
 
 <br/>
+<div align="center">
 
+<img
+  src="./assets/sonicflow-feature-table.gif"
+  alt="SonicFlow Animated Feature Matrix"
+  width="900"
+/>
 
+</div>
+## SonicFlow — Feature Matrix
+
+<div align="center">
+
+<img
+  src="./assets/sonicflow-feature-table.gif"
+  alt="Animated SonicFlow Feature Matrix"
+  width="900"
+/>
+
+</div>
+
+## How SonicFlow Works
+
+<div align="center">
+
+<img
+  src="./assets/sonicflow-animated-flowchart.gif"
+  alt="SonicFlow Animated Processing Flowchart"
+  width="1000"
+/>
+
+</div>
 <h1>SONICFLOW</h1>
 
 <p><strong>Turn Video Into a New Sound</strong></p>
