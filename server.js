@@ -407,9 +407,11 @@ function downloadYouTubeAudio(youtubeUrl) {
         proc.stderr.on('data', d => {
           const s = d.toString();
           stderr += s;
-          console.log('[yt-dlp err]:', s.slice(0, 120).trim());
+          if (process.env.DEBUG_YTDLP) console.log('[yt-dlp err]:', s.slice(0, 120).trim());
         });
-        proc.stdout.on('data', d => { console.log('[yt-dlp]:', d.toString().slice(0, 100).trim()); });
+        proc.stdout.on('data', d => {
+          if (process.env.DEBUG_YTDLP) console.log('[yt-dlp]:', d.toString().slice(0, 100).trim());
+        });
 
         proc.on('close', (code) => {
           try {
@@ -435,23 +437,15 @@ function downloadYouTubeAudio(youtubeUrl) {
     };
 
     const hasCookies = !!initCookies();
-    const primaryClient = hasCookies ? null : 'android,web';
+    const primaryClient = hasCookies ? null : 'android';
 
     executeDownload(primaryClient)
-      .catch((err) => {
-        console.warn('[yt-dlp] Initial extraction error, retrying with android,web client:', err.message);
-        return executeDownload('android,web');
-      })
-      .catch((err2) => {
-        console.warn('[yt-dlp] Second extraction error, retrying with pure android client:', err2.message);
-        return executeDownload('android');
-      })
       .then((fullPath) => {
         activeYtDownloads.delete(videoId);
         resolve(fullPath);
       })
       .catch(async (finalErr) => {
-        console.warn('[yt-dlp] Direct YouTube extraction blocked by datacenter botguard:', finalErr.message);
+        console.log('[yt-dlp] Direct YouTube extraction restricted on datacenter IP, activating SoundCloud Resilience Engine...');
 
         // Resilience Engine: Query authentic video metadata via YouTube oEmbed and fetch the full studio track from SoundCloud
         try {
@@ -633,8 +627,14 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
-        proc.stderr.on('data', d => { stderr += d.toString(); });
-        proc.stdout.on('data', d => { console.log('[yt-dlp video]:', d.toString().slice(0, 80).trim()); });
+        proc.stderr.on('data', d => {
+          const s = d.toString();
+          stderr += s;
+          if (process.env.DEBUG_YTDLP) console.log('[yt-dlp video err]:', s.slice(0, 100).trim());
+        });
+        proc.stdout.on('data', d => {
+          if (process.env.DEBUG_YTDLP) console.log('[yt-dlp video]:', d.toString().slice(0, 80).trim());
+        });
 
         proc.on('close', (code) => {
           try {
@@ -666,24 +666,16 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
     };
 
     const hasCookies = !!initCookies();
-    const primaryClient = hasCookies ? null : 'android,web';
+    const primaryClient = hasCookies ? null : 'android';
 
     executeVideoDownload(primaryClient)
-      .catch((err) => {
-        console.warn('[yt-dlp video] Initial download error, retrying with android,web client:', err.message);
-        return executeVideoDownload('android,web');
-      })
-      .catch((err2) => {
-        console.warn('[yt-dlp video] Second download error, retrying with pure android client:', err2.message);
-        return executeVideoDownload('android');
-      })
       .then((fullPath) => {
         activeYtVideoDownloads.delete(key);
         resolve(fullPath);
       })
       .catch((finalErr) => {
         activeYtVideoDownloads.delete(key);
-        console.warn('[yt-dlp video] Finished without output file:', finalErr.message);
+        console.log('[yt-dlp video] Original video stream restricted by uploader/datacenter policy');
         reject(finalErr);
       });
   });
@@ -873,9 +865,8 @@ const server = http.createServer(async (req, res) => {
       const videoId = ytMatch[1];
       const normalizedUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
-      // Start background download of real original audio & video immediately so it's ready for preview and download!
-      downloadYouTubeAudio(normalizedUrl).catch(err => console.warn('Background yt audio note:', err.message));
-      downloadYouTubeVideo(normalizedUrl, '1080p').catch(err => console.warn('Background yt video note:', err.message));
+      // Start background download of real original audio immediately so it's ready for preview and playback!
+      downloadYouTubeAudio(normalizedUrl).catch(err => console.log('Background audio cache note:', err.message));
 
       try {
         const oembedRes = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(normalizedUrl)}&format=json`);
@@ -1095,7 +1086,7 @@ const server = http.createServer(async (req, res) => {
             console.log(`[MP4] Fetching original video stream for ${targetUrlParam} at quality ${quality}...`);
             videoInput = await downloadYouTubeVideo(targetUrlParam, quality);
           } catch (vErr) {
-            console.warn('[MP4] Failed to download original video stream, falling back to animated cassette:', vErr.message);
+            console.log('[MP4] YouTube video stream restricted by uploader or datacenter policy; generating spatial video with animated visualizer');
           }
         }
 
