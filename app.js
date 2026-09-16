@@ -892,34 +892,34 @@ document.addEventListener('DOMContentLoaded', () => {
       if (percentEl) percentEl.textContent = `${pct}%`;
 
       if (remainingSecs > 0) {
-        if (timerText) timerText.textContent = `~${remainingSecs}s remaining`;
+        if (timerText) timerText.textContent = `~${remainingSecs}s (up to 2m)`;
       } else {
-        if (timerText) timerText.textContent = `Starting transfer...`;
+        if (timerText) timerText.textContent = `Finalizing stream...`;
       }
 
-      // Update button text with live countdown
+      // Update button text with live countdown & 2-minute expectation
       if (btnChamberDownload && state.isDownloadingMaster) {
         const btnSpan = btnChamberDownload.querySelector('span:not(.dl-spinner-ring)');
         if (btnSpan) {
           btnSpan.textContent = remainingSecs > 0
-            ? `Rendering ${effect} ${format} (${quality})... (~${remainingSecs}s left)`
-            : `Starting ${format} stream transfer...`;
+            ? `Rendering ${effect} ${format} (${quality})... (~${remainingSecs}s | up to 2m)`
+            : `Finalizing ${format} Master... (might take up to 2 min)`;
         }
       }
 
       // Dynamic Stages based on progress
       if (progress < 0.28) {
         if (stageName) stageName.textContent = 'Phase 1/4: Stream Acquisition';
-        if (taskDesc) taskDesc.textContent = 'Extracting authenticated video/audio streams via yt-dlp...';
+        if (taskDesc) taskDesc.textContent = 'Extracting original streams via yt-dlp • Might take up to 2 min...';
       } else if (progress < 0.58) {
         if (stageName) stageName.textContent = 'Phase 2/4: Spatial Sound Engine';
-        if (taskDesc) taskDesc.textContent = `Synthesizing ${effect} binaural positioning audio...`;
+        if (taskDesc) taskDesc.textContent = `Synthesizing ${effect} binaural positioning audio matrix...`;
       } else if (progress < 0.88) {
         if (stageName) stageName.textContent = 'Phase 3/4: FFmpeg Master Encoding';
-        if (taskDesc) taskDesc.textContent = `Multiplexing H.264 video & audio master (${format} • ${quality})...`;
+        if (taskDesc) taskDesc.textContent = `Multiplexing ${format} (${quality}) • Might take up to 2 min...`;
       } else {
         if (stageName) stageName.textContent = 'Phase 4/4: Transfer Finalization';
-        if (taskDesc) taskDesc.textContent = 'Buffering stream payload directly to browser download shelf...';
+        if (taskDesc) taskDesc.textContent = 'Buffering master payload to browser download shelf...';
       }
     };
 
@@ -940,7 +940,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (percentEl) percentEl.textContent = '100%';
     if (stageName) stageName.textContent = '✓ Download Dispatched';
     if (timerText) timerText.textContent = 'Ready!';
-    if (taskDesc) taskDesc.textContent = `Master ${format} stream initiated! Check your browser downloads ↓`;
+    if (taskDesc) taskDesc.textContent = `Master ${format} stream dispatched! Check your browser downloads ↓`;
 
     setTimeout(() => {
       if (hud) hud.style.display = 'none';
@@ -980,10 +980,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const downloadUrl = `${apiBase}/api/download-original?url=${encodeURIComponent(targetAudioParam)}&title=${encodeURIComponent(cleanTitle)}&effect=${encodeURIComponent(effectTag)}&quality=${encodeURIComponent(qualityTag)}&format=${encodeURIComponent(ext)}`;
 
-    // Calculate expected processing duration based on format
-    // MP4 involves full high-res video acquisition + FFmpeg H.264 muxing (~18s)
-    // MP3 involves audio stream extraction + spatial processing (~6s)
-    const estimatedSeconds = isMp4 ? 18 : 6;
+    // High-resolution video and spatial audio muxing can take up to 2 minutes
+    const estimatedSeconds = isMp4 ? 45 : 12;
 
     // 1. Visual Loading State on Chamber Download Button
     if (btnChamberDownload) {
@@ -991,29 +989,23 @@ document.addEventListener('DOMContentLoaded', () => {
       btnChamberDownload.classList.add('btn-download-loading');
       btnChamberDownload.innerHTML = `
         <span class="dl-spinner-ring"></span>
-        <span>Rendering ${effectTag} ${ext.toUpperCase()} Master (${qualityTag})... (~${estimatedSeconds}s left)</span>
+        <span>Rendering ${effectTag} ${ext.toUpperCase()} Master (${qualityTag})... (~${estimatedSeconds}s | up to 2m)</span>
       `;
     }
 
-    showToast(isMp4 ? `🎬 Rendering ${qualityTag} MP4 with ${effectTag} spatial audio (~${estimatedSeconds}s)...` : `⚡ Rendering studio master ${ext.toUpperCase()} (${qualityTag}) (~${estimatedSeconds}s)...`, isMp4 ? '🎬' : '⚡');
+    showToast(isMp4 
+      ? `🎬 Rendering ${qualityTag} MP4 with ${effectTag} spatial audio (might take up to 2 min)...` 
+      : `⚡ Rendering studio master ${ext.toUpperCase()} (${qualityTag}) (might take up to 2 min)...`, 
+      isMp4 ? '🎬' : '⚡'
+    );
 
     // 2. Start Visual Countdown Timer & Stage Progress HUD
     startDownloadTimerHUD(estimatedSeconds, ext.toUpperCase(), qualityTag, effectTag);
 
-    // 3. Direct Native Streaming Download Trigger
-    // Using hidden iframe ensures browser native download manager streams directly to disk
-    // with 0 JS heap memory bloat, native download shelf progress, and zero timeout drops!
+    // 3. Direct SINGLE Native Streaming Download Trigger
+    // Using a single anchor click triggers exactly ONE file download in the browser.
+    // (Never trigger both iframe and anchor simultaneously, as that caused duplicate 2-file downloads)
     try {
-      let dlFrame = document.getElementById('sonicflow-download-frame');
-      if (!dlFrame) {
-        dlFrame = document.createElement('iframe');
-        dlFrame.id = 'sonicflow-download-frame';
-        dlFrame.style.display = 'none';
-        document.body.appendChild(dlFrame);
-      }
-      dlFrame.src = downloadUrl;
-
-      // Also provide anchor fallback trigger for maximum browser compatibility
       const a = document.createElement('a');
       a.href = downloadUrl;
       a.download = filename;
@@ -1022,7 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
       a.click();
       setTimeout(() => {
         try { document.body.removeChild(a); } catch(e) {}
-      }, 2000);
+      }, 3000);
 
       // On estimated completion, transition to complete state
       setTimeout(() => {
