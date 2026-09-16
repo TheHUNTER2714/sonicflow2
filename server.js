@@ -437,9 +437,14 @@ function downloadYouTubeAudio(youtubeUrl) {
     };
 
     const hasCookies = !!initCookies();
-    const primaryClient = hasCookies ? null : 'android';
+    const primaryClient = hasCookies ? null : 'visionos';
 
+    // Multi-tier client cascade: visionos -> android -> SoundCloud Resilience Engine
     executeDownload(primaryClient)
+      .catch((err1) => {
+        console.log(`[yt-dlp] Primary audio attempt failed (${err1.message.slice(0, 80)}), retrying with android...`);
+        return executeDownload('android');
+      })
       .then((fullPath) => {
         activeYtDownloads.delete(videoId);
         resolve(fullPath);
@@ -612,11 +617,11 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
 
     const videoTemplate = path.join(cacheDir, `yt_v_${videoId}_${maxHeight}.%(ext)s`);
 
-    const executeVideoDownload = (clientMode = 'android,web') => {
+    const executeVideoDownload = (clientMode = 'visionos') => {
       return new Promise((resAttempt, rejAttempt) => {
         const args = [
           ...getBaseYtdlpArgs(clientMode),
-          '-f', `bv*[height<=?${maxHeight}]+ba/b[height<=?${maxHeight}]/bv*+ba/b/18/b/best`,
+          '-f', `bv*[height<=?${maxHeight}][vcodec^=avc1]/bv*[height<=?${maxHeight}][vcodec^=h264]/bv*[height<=?${maxHeight}][ext=mp4]/bv*[height<=?${maxHeight}]/b[height<=?${maxHeight}]/bv*/b/18/best`,
           '-o', videoTemplate,
           '--force-overwrites',
           '--no-mtime',
@@ -666,16 +671,25 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
     };
 
     const hasCookies = !!initCookies();
-    const primaryClient = hasCookies ? null : 'android';
+    const primaryClient = hasCookies ? null : 'visionos';
 
+    // Multi-tier client fallback: primary (visionos) -> android -> default/web
     executeVideoDownload(primaryClient)
+      .catch((err1) => {
+        console.log(`[yt-dlp video] Primary client attempt failed (${err1.message.slice(0, 80)}), retrying with android...`);
+        return executeVideoDownload('android');
+      })
+      .catch((err2) => {
+        console.log(`[yt-dlp video] android client attempt failed (${err2.message.slice(0, 80)}), retrying with default client...`);
+        return executeVideoDownload(null);
+      })
       .then((fullPath) => {
         activeYtVideoDownloads.delete(key);
         resolve(fullPath);
       })
       .catch((finalErr) => {
         activeYtVideoDownloads.delete(key);
-        console.log('[yt-dlp video] Original video stream restricted by uploader/datacenter policy');
+        console.log('[yt-dlp video] Original video stream could not be extracted:', finalErr.message);
         reject(finalErr);
       });
   });
@@ -1086,7 +1100,7 @@ const server = http.createServer(async (req, res) => {
             console.log(`[MP4] Fetching original video stream for ${targetUrlParam} at quality ${quality}...`);
             videoInput = await downloadYouTubeVideo(targetUrlParam, quality);
           } catch (vErr) {
-            console.log('[MP4] YouTube video stream restricted by uploader or datacenter policy; generating spatial video with animated visualizer');
+            console.log(`[MP4] YouTube video stream extraction failed (${vErr.message}); generating spatial video with animated visualizer`);
           }
         }
 
