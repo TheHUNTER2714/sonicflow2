@@ -71,6 +71,7 @@ function initCookies() {
   if (process.env.YOUTUBE_COOKIES && process.env.YOUTUBE_COOKIES.trim().length > 10) {
     try {
       fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES.trim(), 'utf8');
+      console.log('[yt-dlp] ✓ Loaded YouTube cookies from YOUTUBE_COOKIES environment variable');
       return cookiePath;
     } catch (e) {
       console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES:', e.message);
@@ -82,6 +83,7 @@ function initCookies() {
     try {
       const decoded = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64.trim(), 'base64').toString('utf8');
       fs.writeFileSync(cookiePath, decoded, 'utf8');
+      console.log('[yt-dlp] ✓ Loaded YouTube cookies from YOUTUBE_COOKIES_BASE64 environment variable');
       return cookiePath;
     } catch (e) {
       console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES_BASE64:', e.message);
@@ -97,7 +99,10 @@ function initCookies() {
   for (const c of candidates) {
     if (fs.existsSync(c)) {
       try {
-        if (fs.statSync(c).size > 10) return c;
+        if (fs.statSync(c).size > 10) {
+          console.log('[yt-dlp] ✓ Using existing cookie file:', c);
+          return c;
+        }
       } catch (e) {}
     }
   }
@@ -106,10 +111,11 @@ function initCookies() {
 }
 
 function getBaseYtdlpArgs(customClient = null) {
-  const client = customClient || 'android,web';
+  const client = customClient || 'mweb,android,web';
   const args = [
     '--no-playlist',
     '--no-check-certificates',
+    '--js-runtimes', 'node',
     '--extractor-args', `youtube:player_client=${client}`,
     '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   ];
@@ -452,15 +458,30 @@ async function ensureAudioCached(rawUrl) {
           const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vId}&format=json`);
           if (oembedRes.ok) {
             const oData = await oembedRes.json();
-            const cleanSongTitle = (oData.title || '')
+            const rawVideoTitle = oData.title || '';
+            const segments = rawVideoTitle.split(/[|–—\-]/).map(s => s.trim()).filter(Boolean);
+            const candidates = [];
+
+            const cleanStr = (str) => str
               .replace(/[\(\[\{].*?[\)\]\}]/g, ' ')
               .replace(/\b(official\s*(music\s*)?video|official\s*audio|lyrics?|visualizer|hd|4k|remastered|explicit|audio)\b/gi, ' ')
+              .replace(/[|•~\\/]/g, ' ')
               .replace(/[-–—_]/g, ' ')
               .replace(/\s+/g, ' ')
               .trim();
-            if (cleanSongTitle) {
-              console.log('[Audio Fallback] Searching iTunes for video title:', cleanSongTitle);
-              const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(cleanSongTitle)}&entity=song&limit=1`);
+
+            const fullClean = cleanStr(rawVideoTitle);
+            if (fullClean) candidates.push(fullClean);
+            if (segments.length > 1) {
+              const segClean = cleanStr(segments[0]);
+              if (segClean && !candidates.includes(segClean)) candidates.push(segClean);
+              const combined = cleanStr(`${segments[0]} ${segments[1]}`);
+              if (combined && !candidates.includes(combined)) candidates.push(combined);
+            }
+
+            for (const query of candidates) {
+              console.log('[Audio Fallback] Searching iTunes for:', query);
+              const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
               if (itunesRes.ok) {
                 const itData = await itunesRes.json();
                 if (itData.results && itData.results[0] && itData.results[0].previewUrl) {
