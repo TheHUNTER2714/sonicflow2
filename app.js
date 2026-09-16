@@ -66,10 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Smart Base URL & Asset Path Resolver (Universal support for http://localhost:3000 and file://)
+  // Smart Base URL & Asset Path Resolver (Universal support for production domains, localhost, and file://)
   function getApiBase() {
     if (typeof window !== 'undefined' && window.location) {
-      if (window.location.port === '3000') {
+      if (window.location.protocol.startsWith('http')) {
         return '';
       }
     }

@@ -11,9 +11,30 @@ if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir, { recursive: true });
 }
 
-const ffmpegDir = fs.existsSync('C:\\Users\\ayush\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.1-full_build\\bin')
-  ? 'C:\\Users\\ayush\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.1-full_build\\bin'
-  : '';
+const localWinFfmpeg = 'C:\\Users\\ayush\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.1-full_build\\bin';
+const ffmpegDir = fs.existsSync(localWinFfmpeg) ? localWinFfmpeg : '';
+
+function getYtdlpBin() {
+  const localWin = path.join(__dirname, 'bin', 'yt-dlp.exe');
+  if (fs.existsSync(localWin)) return localWin;
+  const localLinux = path.join(__dirname, 'bin', 'yt-dlp');
+  if (fs.existsSync(localLinux)) return localLinux;
+  return 'yt-dlp';
+}
+
+function isBinaryAvailable(binNameOrPath) {
+  if (path.isAbsolute(binNameOrPath) || binNameOrPath.includes(path.sep)) {
+    return fs.existsSync(binNameOrPath);
+  }
+  try {
+    const { execSync } = require('child_process');
+    const cmd = process.platform === 'win32' ? `where ${binNameOrPath}` : `which ${binNameOrPath}`;
+    execSync(cmd, { stdio: 'ignore' });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
 
 const mimeTypes = {
   '.html': 'text/html',
@@ -110,9 +131,9 @@ function downloadYouTubeAudio(youtubeUrl) {
       }
     } catch (e) {}
 
-    const ytdlpBin = path.join(__dirname, 'bin', 'yt-dlp.exe');
-    if (!fs.existsSync(ytdlpBin)) {
-      return reject(new Error('yt-dlp not found in bin directory'));
+    const ytdlpBin = getYtdlpBin();
+    if (!isBinaryAvailable(ytdlpBin)) {
+      return reject(new Error('yt-dlp binary not found'));
     }
 
     const outputTemplate = path.join(cacheDir, `yt_${videoId}.%(ext)s`);
@@ -206,8 +227,8 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
       }
     } catch (e) {}
 
-    const ytdlpBin = path.join(__dirname, 'bin', 'yt-dlp.exe');
-    if (!fs.existsSync(ytdlpBin)) {
+    const ytdlpBin = getYtdlpBin();
+    if (!isBinaryAvailable(ytdlpBin)) {
       return reject(new Error('yt-dlp not found in bin directory'));
     }
 
@@ -461,8 +482,8 @@ const server = http.createServer(async (req, res) => {
         res.end(JSON.stringify(responseData));
       } else {
         // Fallback: Search YouTube with yt-dlp to find the authentic track!
-        const ytdlpBin = path.join(__dirname, 'bin', 'yt-dlp.exe');
-        if (fs.existsSync(ytdlpBin)) {
+        const ytdlpBin = getYtdlpBin();
+        if (isBinaryAvailable(ytdlpBin)) {
           console.log('[yt-dlp] iTunes had no match, searching YouTube for:', cleanQuery);
           const searchProc = spawn(ytdlpBin, [
             `ytsearch1:${cleanQuery}`,
@@ -564,7 +585,7 @@ const server = http.createServer(async (req, res) => {
 
     const effectTag = effect === 'OFF' ? 'Stereo' : effect;
     const downloadFilename = `${cleanTitle}_${effectTag}_${quality}.${format}`;
-    const ffmpegBin = ffmpegDir ? path.join(ffmpegDir, 'ffmpeg.exe') : 'ffmpeg';
+    const ffmpegBin = ffmpegDir ? path.join(ffmpegDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg') : 'ffmpeg';
 
     try {
       const cachedInput = await ensureAudioCached(targetUrlParam);
@@ -799,7 +820,7 @@ const server = http.createServer(async (req, res) => {
   streamFileWithRange(req, res, filePath);
 });
 
-const PORT = 3000;
-server.listen(PORT, () => {
-  console.log(`SonicFlow server active with yt-dlp real song extraction & FFmpeg master encoding at http://localhost:${PORT}`);
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`SonicFlow server active with yt-dlp real song extraction & FFmpeg master encoding on port ${PORT}`);
 });
