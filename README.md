@@ -4,7 +4,48 @@
 
 ### `Transform. Remix. Experience Sound.`
 
-<img src="./assets/sonicflow-hero.svg" alt="SonicFlow Animated Hero" width="900"/>
+<div align="center">
+
+<a href="https://github.com/TheHUNTER2714/sonicflow2">
+  <img
+    src="https://raw.githubusercontent.com/TheHUNTER2714/sonicflow2/main-2/assets/sonicflow-logo.svg"
+    alt="SonicFlow"
+    width="180"
+  />
+</a>
+
+<br/>
+
+<img
+  src="./assets/sonicflow-hero.svg"
+  alt="SonicFlow Animated Hero"
+  width="900"
+/>
+
+<h1>SONICFLOW</h1>
+
+<p><strong>Turn Video Into a New Sound</strong></p>
+
+<img
+  src="https://readme-typing-svg.demolab.com?font=Space+Grotesk&weight=600&size=24&duration=2800&pause=900&center=true&vCenter=true&width=700&lines=YouTube+to+MP3+%2F+MP4;Original+Audio+%7C+8D+%7C+16D;A+New+Listening+Dimension;Powered+by+FFmpeg+%2B+yt-dlp"
+  alt="SonicFlow typing animation"
+/>
+
+<br/>
+
+<a href="https://sonicflow-sc0u.onrender.com">
+  <img src="https://img.shields.io/badge/LIVE%20DEMO-OPEN-black?style=for-the-badge" />
+</a>
+
+<a href="https://github.com/TheHUNTER2714/sonicflow2">
+  <img src="https://img.shields.io/badge/GITHUB-SOURCE-black?style=for-the-badge&logo=github" />
+</a>
+
+<a href="https://ireel.today/v/b6d86cd724">
+  <img src="https://img.shields.io/badge/WATCH-REEL-black?style=for-the-badge" />
+</a>
+
+</div>
 
 <br/>
 
