@@ -53,15 +53,78 @@ function getYtdlpBin() {
   const binDir = path.join(__dirname, 'bin');
   if (process.platform === 'win32') {
     const winBin = path.join(binDir, 'yt-dlp.exe');
-    if (fs.existsSync(winBin)) return winBin;
+    if (fs.existsSync(winBin) && fs.statSync(winBin).size > 1000000) return winBin;
   } else {
     const linuxBin = path.join(binDir, 'yt-dlp');
-    if (fs.existsSync(linuxBin)) {
+    if (fs.existsSync(linuxBin) && fs.statSync(linuxBin).size > 1000000) {
       try { fs.chmodSync(linuxBin, 0o755); } catch (e) {}
       return linuxBin;
     }
   }
   return 'yt-dlp';
+}
+
+function initCookies() {
+  const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
+
+  // 1. Raw text cookies passed via YOUTUBE_COOKIES env var (Render Dashboard)
+  if (process.env.YOUTUBE_COOKIES && process.env.YOUTUBE_COOKIES.trim().length > 10) {
+    try {
+      fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES.trim(), 'utf8');
+      return cookiePath;
+    } catch (e) {
+      console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES:', e.message);
+    }
+  }
+
+  // 2. Base64-encoded cookies passed via YOUTUBE_COOKIES_BASE64 env var
+  if (process.env.YOUTUBE_COOKIES_BASE64 && process.env.YOUTUBE_COOKIES_BASE64.trim().length > 10) {
+    try {
+      const decoded = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64.trim(), 'base64').toString('utf8');
+      fs.writeFileSync(cookiePath, decoded, 'utf8');
+      return cookiePath;
+    } catch (e) {
+      console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES_BASE64:', e.message);
+    }
+  }
+
+  // 3. Check for existing cookies.txt in root, bin, or cache
+  const candidates = [
+    cookiePath,
+    path.join(__dirname, 'cookies.txt'),
+    path.join(__dirname, 'bin', 'cookies.txt')
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) {
+      try {
+        if (fs.statSync(c).size > 10) return c;
+      } catch (e) {}
+    }
+  }
+
+  return null;
+}
+
+function getBaseYtdlpArgs(customClient = null) {
+  const client = customClient || 'android,web';
+  const args = [
+    '--no-playlist',
+    '--no-check-certificates',
+    '--extractor-args', `youtube:player_client=${client}`,
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+  ];
+
+  const cookieFile = initCookies();
+  if (cookieFile && fs.existsSync(cookieFile)) {
+    args.push('--cookies', cookieFile);
+  }
+
+  const ffmpegDir = getFfmpegDir();
+  if (ffmpegDir) {
+    args.push('--ffmpeg-location', ffmpegDir);
+  }
+
+  return args;
 }
 
 function isBinaryAvailable(binNameOrPath) {
@@ -178,51 +241,63 @@ function downloadYouTubeAudio(youtubeUrl) {
     }
 
     const outputTemplate = path.join(cacheDir, `yt_${videoId}.%(ext)s`);
-    const args = [
-      '-f', 'ba/b',
-      '-x',
-      '--audio-format', 'm4a',
-      '-o', outputTemplate,
-      '--no-playlist',
-      '--no-check-certificates',
-      '--force-overwrites'
-    ];
 
-    const ffmpegDir = getFfmpegDir();
-    if (ffmpegDir) {
-      args.push('--ffmpeg-location', ffmpegDir);
-    }
+    const executeDownload = (clientMode = 'android,web') => {
+      return new Promise((resAttempt, rejAttempt) => {
+        const args = [
+          ...getBaseYtdlpArgs(clientMode),
+          '-f', 'ba/b[ext=m4a]/ba/b',
+          '-x',
+          '--audio-format', 'm4a',
+          '-o', outputTemplate,
+          '--force-overwrites',
+          youtubeUrl
+        ];
 
-    args.push(youtubeUrl);
+        console.log(`[yt-dlp] Downloading audio (${clientMode}):`, youtubeUrl);
+        const proc = spawn(ytdlpBin, args);
 
-    console.log('[yt-dlp] Downloading real audio from provided URL:', youtubeUrl);
-    const proc = spawn(ytdlpBin, args);
+        let stderr = '';
+        proc.stderr.on('data', d => { stderr += d.toString(); });
+        proc.stdout.on('data', d => { console.log('[yt-dlp]:', d.toString().slice(0, 100).trim()); });
 
-    let stderr = '';
-    proc.stderr.on('data', d => { stderr += d.toString(); });
-    proc.stdout.on('data', d => { console.log('[yt-dlp]:', d.toString().slice(0, 100).trim()); });
+        proc.on('close', (code) => {
+          try {
+            const files = fs.readdirSync(cacheDir);
+            const found = files.find(f => 
+              (f.startsWith(`yt_${videoId}.`) || f.startsWith(`real_yt_${videoId}.`)) && 
+              (f.endsWith('.m4a') || f.endsWith('.mp3') || f.endsWith('.webm') || f.endsWith('.opus') || f.endsWith('.mp4')) &&
+              !f.endsWith('.temp') && !f.endsWith('.part') &&
+              fs.statSync(path.join(cacheDir, f)).size > 10000
+            );
+            if (found) {
+              const fullPath = path.join(cacheDir, found);
+              console.log('[yt-dlp] Successfully extracted audio for:', videoId, fullPath);
+              return resAttempt(fullPath);
+            }
+          } catch (e) {}
 
-    proc.on('close', (code) => {
-      activeYtDownloads.delete(videoId);
+          rejAttempt(new Error(`yt-dlp exited with code ${code}: ${stderr.slice(-200).trim()}`));
+        });
 
-      try {
-        const files = fs.readdirSync(cacheDir);
-        const found = files.find(f => (f.startsWith(`yt_${videoId}.`) || f.startsWith(`real_yt_${videoId}.`)) && fs.statSync(path.join(cacheDir, f)).size > 10000);
-        if (found) {
-          const fullPath = path.join(cacheDir, found);
-          console.log('[yt-dlp] Successfully extracted audio for:', videoId, fullPath);
-          return resolve(fullPath);
-        }
-      } catch (e) {}
+        proc.on('error', rejAttempt);
+      });
+    };
 
-      console.warn('[yt-dlp] Process finished without output file. Code:', code, stderr.slice(-200));
-      reject(new Error(`yt-dlp failed with exit code ${code}`));
-    });
-
-    proc.on('error', (err) => {
-      activeYtDownloads.delete(videoId);
-      reject(err);
-    });
+    executeDownload('android,web')
+      .catch((err) => {
+        console.warn('[yt-dlp] Initial extraction error, retrying with pure android client:', err.message);
+        return executeDownload('android');
+      })
+      .then((fullPath) => {
+        activeYtDownloads.delete(videoId);
+        resolve(fullPath);
+      })
+      .catch((finalErr) => {
+        activeYtDownloads.delete(videoId);
+        console.warn('[yt-dlp] Process finished without output file:', finalErr.message);
+        reject(finalErr);
+      });
   });
 
   activeYtDownloads.set(videoId, downloadPromise);
@@ -275,61 +350,68 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
     }
 
     const videoTemplate = path.join(cacheDir, `yt_v_${videoId}_${maxHeight}.%(ext)s`);
-    const args = [
-      '-f', `bv*[height<=?${maxHeight}][vcodec^=avc1]/bv*[height<=?${maxHeight}][ext=mp4]/bv*[height<=?${maxHeight}]/bv*`,
-      '-o', videoTemplate,
-      '--no-playlist',
-      '--no-check-certificates',
-      '--force-overwrites',
-      '--no-mtime'
-    ];
 
-    const ffmpegDir = getFfmpegDir();
-    if (ffmpegDir) {
-      args.push('--ffmpeg-location', ffmpegDir);
-    }
+    const executeVideoDownload = (clientMode = 'android,web') => {
+      return new Promise((resAttempt, rejAttempt) => {
+        const args = [
+          ...getBaseYtdlpArgs(clientMode),
+          '-f', `bv*[height<=?${maxHeight}]+ba/b[height<=?${maxHeight}]/bv*+ba/b`,
+          '-o', videoTemplate,
+          '--force-overwrites',
+          '--no-mtime',
+          youtubeUrl
+        ];
 
-    args.push(youtubeUrl);
+        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode}):`, youtubeUrl);
+        const proc = spawn(ytdlpBin, args);
 
-    console.log(`[yt-dlp] Downloading real video stream (${maxHeight}p) for:`, youtubeUrl);
-    const proc = spawn(ytdlpBin, args);
+        let stderr = '';
+        proc.stderr.on('data', d => { stderr += d.toString(); });
+        proc.stdout.on('data', d => { console.log('[yt-dlp video]:', d.toString().slice(0, 80).trim()); });
 
-    let stderr = '';
-    proc.stderr.on('data', d => { stderr += d.toString(); });
-    proc.stdout.on('data', d => { console.log('[yt-dlp video]:', d.toString().slice(0, 80).trim()); });
+        proc.on('close', (code) => {
+          try {
+            const files = fs.readdirSync(cacheDir);
+            const found = files.find(f => 
+              f.startsWith(`yt_v_${videoId}_${maxHeight}`) && 
+              (f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.mkv')) &&
+              !f.endsWith('.temp.mp4') && !f.endsWith('.part') &&
+              fs.statSync(path.join(cacheDir, f)).size > 500000
+            ) || files.find(f => 
+              f.startsWith(`yt_v_${videoId}`) && 
+              (f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.mkv')) &&
+              !f.endsWith('.temp.mp4') && !f.endsWith('.part') &&
+              fs.statSync(path.join(cacheDir, f)).size > 500000
+            );
 
-    proc.on('close', (code) => {
-      activeYtVideoDownloads.delete(key);
+            if (found) {
+              const fullPath = path.join(cacheDir, found);
+              console.log('[yt-dlp] Successfully downloaded original video stream:', fullPath);
+              return resAttempt(fullPath);
+            }
+          } catch (e) {}
 
-      try {
-        const files = fs.readdirSync(cacheDir);
-        const found = files.find(f => 
-          f.startsWith(`yt_v_${videoId}_${maxHeight}`) && 
-          (f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.mkv')) &&
-          !f.endsWith('.temp.mp4') &&
-          fs.statSync(path.join(cacheDir, f)).size > 1000000
-        ) || files.find(f => 
-          f.startsWith(`yt_v_${videoId}`) && 
-          (f.endsWith('.mp4') || f.endsWith('.webm') || f.endsWith('.mkv')) &&
-          !f.endsWith('.temp.mp4') &&
-          fs.statSync(path.join(cacheDir, f)).size > 1000000
-        );
+          rejAttempt(new Error(`yt-dlp video exited with code ${code}: ${stderr.slice(-200).trim()}`));
+        });
 
-        if (found) {
-          const fullPath = path.join(cacheDir, found);
-          console.log('[yt-dlp] Successfully downloaded original video stream:', fullPath);
-          return resolve(fullPath);
-        }
-      } catch (e) {}
+        proc.on('error', rejAttempt);
+      });
+    };
 
-      console.warn('[yt-dlp video] Finished without output file. Code:', code, stderr.slice(-200));
-      reject(new Error(`yt-dlp video download failed with exit code ${code}`));
-    });
-
-    proc.on('error', (err) => {
-      activeYtVideoDownloads.delete(key);
-      reject(err);
-    });
+    executeVideoDownload('android,web')
+      .catch((err) => {
+        console.warn('[yt-dlp video] Initial download error, retrying with pure android client:', err.message);
+        return executeVideoDownload('android');
+      })
+      .then((fullPath) => {
+        activeYtVideoDownloads.delete(key);
+        resolve(fullPath);
+      })
+      .catch((finalErr) => {
+        activeYtVideoDownloads.delete(key);
+        console.warn('[yt-dlp video] Finished without output file:', finalErr.message);
+        reject(finalErr);
+      });
   });
 
   activeYtVideoDownloads.set(key, downloadPromise);
@@ -360,7 +442,41 @@ async function ensureAudioCached(rawUrl) {
         return ytAudio;
       }
     } catch (err) {
-      console.warn('[yt-dlp] Download error:', err.message);
+      console.warn('[yt-dlp] Direct YouTube download failed:', err.message);
+
+      // Resilient Cloud Fallback: Query YouTube oEmbed for authentic song title and search iTunes
+      try {
+        const ytMatch = targetUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+        if (ytMatch) {
+          const vId = ytMatch[1];
+          const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vId}&format=json`);
+          if (oembedRes.ok) {
+            const oData = await oembedRes.json();
+            const cleanSongTitle = (oData.title || '')
+              .replace(/[\(\[\{].*?[\)\]\}]/g, ' ')
+              .replace(/\b(official\s*(music\s*)?video|official\s*audio|lyrics?|visualizer|hd|4k|remastered|explicit|audio)\b/gi, ' ')
+              .replace(/[-–—_]/g, ' ')
+              .replace(/\s+/g, ' ')
+              .trim();
+            if (cleanSongTitle) {
+              console.log('[Audio Fallback] Searching iTunes for video title:', cleanSongTitle);
+              const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(cleanSongTitle)}&entity=song&limit=1`);
+              if (itunesRes.ok) {
+                const itData = await itunesRes.json();
+                if (itData.results && itData.results[0] && itData.results[0].previewUrl) {
+                  console.log('[Audio Fallback] Found genuine iTunes audio stream for:', itData.results[0].trackName);
+                  const itunesCached = await ensureAudioCached(itData.results[0].previewUrl);
+                  if (itunesCached && fs.existsSync(itunesCached)) {
+                    return itunesCached;
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (fallbackErr) {
+        console.warn('[Audio Fallback] Could not resolve alternative iTunes stream:', fallbackErr.message);
+      }
     }
   }
 
@@ -529,11 +645,10 @@ const server = http.createServer(async (req, res) => {
         if (isBinaryAvailable(ytdlpBin)) {
           console.log('[yt-dlp] iTunes had no match, searching YouTube for:', cleanQuery);
           const searchProc = spawn(ytdlpBin, [
+            ...getBaseYtdlpArgs(),
             `ytsearch1:${cleanQuery}`,
             '--get-id',
-            '--get-title',
-            '--no-playlist',
-            '--no-check-certificates'
+            '--get-title'
           ]);
           let searchOut = '';
           searchProc.stdout.on('data', d => { searchOut += d.toString(); });

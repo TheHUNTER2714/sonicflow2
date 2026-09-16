@@ -1,8 +1,9 @@
 services:
   - type: web
     name: sonicflow
-    env: node
+    runtime: node
     plan: free
+    nodeVersion: 20
     buildCommand: npm install
     startCommand: npm start
     envVars:

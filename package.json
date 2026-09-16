@@ -9,6 +9,9 @@
     "postinstall": "node scripts/setup.js",
     "build": "node scripts/setup.js"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@radix-ui/react-label": "^2.1.2",
     "@radix-ui/react-slot": "^1.1.2",
