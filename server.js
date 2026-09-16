@@ -64,15 +64,73 @@ function getYtdlpBin() {
   return 'yt-dlp';
 }
 
+function formatAndValidateCookies(raw) {
+  if (!raw) return null;
+  let str = String(raw).trim();
+  const bs = String.fromCharCode(92);
+  str = str.split(bs + 'r' + bs + 'n').join('\n')
+           .split(bs + 'n').join('\n')
+           .split(bs + 't').join('\t')
+           .split('\r').join('');
+
+  // 1. JSON Array format (often exported by browser extensions like Cookie-Editor)
+  if (str.startsWith('[') || str.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(str);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      let netscape = '# Netscape HTTP Cookie File\n# Converted by SonicFlow\n';
+      let count = 0;
+      for (const c of items) {
+        if (!c.name || c.value === undefined) continue;
+        const dom = c.domain || '.youtube.com';
+        const flag = dom.startsWith('.') ? 'TRUE' : 'FALSE';
+        const p = c.path || '/';
+        const sec = c.secure ? 'TRUE' : 'FALSE';
+        const exp = Math.floor(c.expirationDate || c.expiry || c.expires || (Date.now() / 1000 + 86400 * 365));
+        netscape += `${dom}\t${flag}\t${p}\t${sec}\t${exp}\t${c.name}\t${c.value}\n`;
+        count++;
+      }
+      if (count > 0) return { content: netscape, count };
+    } catch (e) {}
+  }
+
+  // 2. Netscape format (tab or whitespace separated)
+  const lines = str.split('\n').map(l => l.trim()).filter(Boolean);
+  let netscape = '# Netscape HTTP Cookie File\n';
+  let count = 0;
+  for (const line of lines) {
+    if (line.startsWith('#')) continue;
+    let parts = line.split('\t');
+    if (parts.length < 7) {
+      parts = line.split(/\s+/);
+    }
+    if (parts.length >= 7) {
+      netscape += parts.slice(0, 7).join('\t') + '\n';
+      count++;
+    }
+  }
+
+  if (count > 0) return { content: netscape, count };
+  return null;
+}
+
 function initCookies() {
   const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
 
   // 1. Raw text cookies passed via YOUTUBE_COOKIES env var (Render Dashboard)
   if (process.env.YOUTUBE_COOKIES && process.env.YOUTUBE_COOKIES.trim().length > 10) {
     try {
-      fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES.trim(), 'utf8');
-      console.log('[yt-dlp] ✓ Loaded YouTube cookies from YOUTUBE_COOKIES environment variable');
-      return cookiePath;
+      const parsed = formatAndValidateCookies(process.env.YOUTUBE_COOKIES);
+      if (parsed && parsed.count > 0) {
+        fs.writeFileSync(cookiePath, parsed.content, 'utf8');
+        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies from YOUTUBE_COOKIES env var`);
+        return cookiePath;
+      } else {
+        // Fallback: write raw if parser didn't match
+        fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES.trim(), 'utf8');
+        console.log('[yt-dlp] ✓ Loaded raw YouTube cookies from YOUTUBE_COOKIES environment variable');
+        return cookiePath;
+      }
     } catch (e) {
       console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES:', e.message);
     }
@@ -82,9 +140,16 @@ function initCookies() {
   if (process.env.YOUTUBE_COOKIES_BASE64 && process.env.YOUTUBE_COOKIES_BASE64.trim().length > 10) {
     try {
       const decoded = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64.trim(), 'base64').toString('utf8');
-      fs.writeFileSync(cookiePath, decoded, 'utf8');
-      console.log('[yt-dlp] ✓ Loaded YouTube cookies from YOUTUBE_COOKIES_BASE64 environment variable');
-      return cookiePath;
+      const parsed = formatAndValidateCookies(decoded);
+      if (parsed && parsed.count > 0) {
+        fs.writeFileSync(cookiePath, parsed.content, 'utf8');
+        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies from YOUTUBE_COOKIES_BASE64 env var`);
+        return cookiePath;
+      } else {
+        fs.writeFileSync(cookiePath, decoded, 'utf8');
+        console.log('[yt-dlp] ✓ Loaded raw YouTube cookies from YOUTUBE_COOKIES_BASE64 environment variable');
+        return cookiePath;
+      }
     } catch (e) {
       console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES_BASE64:', e.message);
     }
@@ -111,18 +176,20 @@ function initCookies() {
 }
 
 function getBaseYtdlpArgs(customClient = null) {
-  const client = customClient || 'mweb,android,web';
   const args = [
     '--no-playlist',
     '--no-check-certificates',
     '--js-runtimes', 'node',
-    '--extractor-args', `youtube:player_client=${client}`,
     '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
   ];
 
   const cookieFile = initCookies();
   if (cookieFile && fs.existsSync(cookieFile)) {
     args.push('--cookies', cookieFile);
+  }
+
+  if (customClient) {
+    args.push('--extractor-args', `youtube:player_client=${customClient}`);
   }
 
   const ffmpegDir = getFfmpegDir();
@@ -260,7 +327,7 @@ function downloadYouTubeAudio(youtubeUrl) {
           youtubeUrl
         ];
 
-        console.log(`[yt-dlp] Downloading audio (${clientMode}):`, youtubeUrl);
+        console.log(`[yt-dlp] Downloading audio (${clientMode || 'authenticated/default'}):`, youtubeUrl);
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
@@ -290,7 +357,7 @@ function downloadYouTubeAudio(youtubeUrl) {
       });
     };
 
-    executeDownload('android,web')
+    executeDownload(null)
       .catch((err) => {
         console.warn('[yt-dlp] Initial extraction error, retrying with pure android client:', err.message);
         return executeDownload('android');
@@ -368,7 +435,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
           youtubeUrl
         ];
 
-        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode}):`, youtubeUrl);
+        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode || 'authenticated/default'}):`, youtubeUrl);
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
@@ -404,7 +471,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
       });
     };
 
-    executeVideoDownload('android,web')
+    executeVideoDownload(null)
       .catch((err) => {
         console.warn('[yt-dlp video] Initial download error, retrying with pure android client:', err.message);
         return executeVideoDownload('android');
