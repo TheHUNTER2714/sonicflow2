@@ -53,9 +53,8 @@ class SpatialAudioEngine {
     if (!path) return 'assets/blinding_lights.m4a';
     if (path.startsWith('http:') || path.startsWith('https:')) return path;
     if (path.startsWith('/api/')) {
-      const base = (typeof window !== 'undefined' && window.location && window.location.port === '3000') 
-        ? '' 
-        : 'http://localhost:3000';
+      const isHttp = typeof window !== 'undefined' && window.location && window.location.protocol.startsWith('http');
+      const base = isHttp ? '' : 'http://localhost:3000';
       return `${base}${path}`;
     }
     if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
@@ -602,7 +601,7 @@ class SpatialAudioEngine {
     }
 
     // Pre-decode audio buffer for offline spatial rendering
-    return await this.predecodeUrl(url);
+    return await this.predecodeUrl(cleanUrl);
   }
 
   async predecodeUrl(url) {

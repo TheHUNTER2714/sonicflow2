@@ -3,7 +3,7 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const crypto = require('crypto');
 
 const cacheDir = path.join(__dirname, 'assets', 'cache');
@@ -11,14 +11,56 @@ if (!fs.existsSync(cacheDir)) {
   fs.mkdirSync(cacheDir, { recursive: true });
 }
 
-const localWinFfmpeg = 'C:\\Users\\ayush\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.1-full_build\\bin';
-const ffmpegDir = fs.existsSync(localWinFfmpeg) ? localWinFfmpeg : '';
+let ffmpegStatic = null;
+try {
+  ffmpegStatic = require('ffmpeg-static');
+  if (process.platform !== 'win32' && ffmpegStatic && fs.existsSync(ffmpegStatic)) {
+    try { fs.chmodSync(ffmpegStatic, 0o755); } catch (e) {}
+  }
+} catch (e) {}
+
+function getFfmpegBin() {
+  if (ffmpegStatic && fs.existsSync(ffmpegStatic)) {
+    return ffmpegStatic;
+  }
+  const localWinFfmpeg = 'C:\\Users\\ayush\\AppData\\Local\\Microsoft\\WinGet\\Packages\\Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe\\ffmpeg-9.0.1-full_build\\bin\\ffmpeg.exe';
+  if (fs.existsSync(localWinFfmpeg)) {
+    return localWinFfmpeg;
+  }
+  return process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg';
+}
+
+function getFfprobeBin() {
+  const ffmpegPath = getFfmpegBin();
+  if (path.isAbsolute(ffmpegPath)) {
+    const dir = path.dirname(ffmpegPath);
+    const probeName = process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+    const candidate = path.join(dir, probeName);
+    if (fs.existsSync(candidate)) return candidate;
+  }
+  return process.platform === 'win32' ? 'ffprobe.exe' : 'ffprobe';
+}
+
+function getFfmpegDir() {
+  const bin = getFfmpegBin();
+  if (path.isAbsolute(bin)) {
+    return path.dirname(bin);
+  }
+  return '';
+}
 
 function getYtdlpBin() {
-  const localWin = path.join(__dirname, 'bin', 'yt-dlp.exe');
-  if (fs.existsSync(localWin)) return localWin;
-  const localLinux = path.join(__dirname, 'bin', 'yt-dlp');
-  if (fs.existsSync(localLinux)) return localLinux;
+  const binDir = path.join(__dirname, 'bin');
+  if (process.platform === 'win32') {
+    const winBin = path.join(binDir, 'yt-dlp.exe');
+    if (fs.existsSync(winBin)) return winBin;
+  } else {
+    const linuxBin = path.join(binDir, 'yt-dlp');
+    if (fs.existsSync(linuxBin)) {
+      try { fs.chmodSync(linuxBin, 0o755); } catch (e) {}
+      return linuxBin;
+    }
+  }
   return 'yt-dlp';
 }
 
@@ -27,7 +69,6 @@ function isBinaryAvailable(binNameOrPath) {
     return fs.existsSync(binNameOrPath);
   }
   try {
-    const { execSync } = require('child_process');
     const cmd = process.platform === 'win32' ? `where ${binNameOrPath}` : `which ${binNameOrPath}`;
     execSync(cmd, { stdio: 'ignore' });
     return true;
@@ -147,6 +188,7 @@ function downloadYouTubeAudio(youtubeUrl) {
       '--force-overwrites'
     ];
 
+    const ffmpegDir = getFfmpegDir();
     if (ffmpegDir) {
       args.push('--ffmpeg-location', ffmpegDir);
     }
@@ -229,7 +271,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
 
     const ytdlpBin = getYtdlpBin();
     if (!isBinaryAvailable(ytdlpBin)) {
-      return reject(new Error('yt-dlp not found in bin directory'));
+      return reject(new Error('yt-dlp binary not found'));
     }
 
     const videoTemplate = path.join(cacheDir, `yt_v_${videoId}_${maxHeight}.%(ext)s`);
@@ -242,6 +284,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
       '--no-mtime'
     ];
 
+    const ffmpegDir = getFfmpegDir();
     if (ffmpegDir) {
       args.push('--ffmpeg-location', ffmpegDir);
     }
@@ -585,7 +628,7 @@ const server = http.createServer(async (req, res) => {
 
     const effectTag = effect === 'OFF' ? 'Stereo' : effect;
     const downloadFilename = `${cleanTitle}_${effectTag}_${quality}.${format}`;
-    const ffmpegBin = ffmpegDir ? path.join(ffmpegDir, process.platform === 'win32' ? 'ffmpeg.exe' : 'ffmpeg') : 'ffmpeg';
+    const ffmpegBin = getFfmpegBin();
 
     try {
       const cachedInput = await ensureAudioCached(targetUrlParam);
@@ -625,7 +668,8 @@ const server = http.createServer(async (req, res) => {
           // Check if video is already H.264
           let isH264 = false;
           try {
-            const probeOut = execSync(`ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${videoInput}"`, { timeout: 3000 }).toString().trim().toLowerCase();
+            const ffprobeBin = getFfprobeBin();
+            const probeOut = execSync(`"${ffprobeBin}" -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "${videoInput}"`, { timeout: 3000 }).toString().trim().toLowerCase();
             isH264 = probeOut.includes('h264') || probeOut.includes('avc');
           } catch (e) {
             isH264 = false;
