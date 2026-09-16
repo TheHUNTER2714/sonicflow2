@@ -67,68 +67,117 @@ function getYtdlpBin() {
 function formatAndValidateCookies(raw) {
   if (!raw) return null;
   let str = String(raw).trim();
-  const bs = String.fromCharCode(92);
-  str = str.split(bs + 'r' + bs + 'n').join('\n')
-           .split(bs + 'n').join('\n')
-           .split(bs + 't').join('\t')
-           .split('\r').join('');
+  // Strip surrounding quotes
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
 
-  // 1. JSON Array format (often exported by browser extensions like Cookie-Editor)
-  if (str.startsWith('[') || str.startsWith('{')) {
+  // Auto-detect base64
+  if (!str.includes('\n') && !str.includes('\t') && !str.includes(';') && str.length > 20) {
     try {
-      const parsed = JSON.parse(str);
-      const items = Array.isArray(parsed) ? parsed : [parsed];
-      let netscape = '# Netscape HTTP Cookie File\n# Converted by SonicFlow\n';
-      let count = 0;
-      for (const c of items) {
-        if (!c.name || c.value === undefined) continue;
-        const dom = c.domain || '.youtube.com';
-        const flag = dom.startsWith('.') ? 'TRUE' : 'FALSE';
-        const p = c.path || '/';
-        const sec = c.secure ? 'TRUE' : 'FALSE';
-        const exp = Math.floor(c.expirationDate || c.expiry || c.expires || (Date.now() / 1000 + 86400 * 365));
-        netscape += `${dom}\t${flag}\t${p}\t${sec}\t${exp}\t${c.name}\t${c.value}\n`;
-        count++;
+      const decoded = Buffer.from(str, 'base64').toString('utf8');
+      if (decoded.includes('youtube.com') || decoded.includes('SID') || decoded.includes('Netscape') || decoded.startsWith('[')) {
+        str = decoded.trim();
       }
-      if (count > 0) return { content: netscape, count };
     } catch (e) {}
   }
 
-  // 2. Netscape format (tab or whitespace separated)
-  const lines = str.split('\n').map(l => l.trim()).filter(Boolean);
+  // Unescape literal \n and \t
+  str = str.replace(/\\r\\n/g, '\n')
+           .replace(/\\n/g, '\n')
+           .replace(/\\t/g, '\t')
+           .replace(/\r/g, '');
+
+  // 1. JSON Array / Object format (Cookie-Editor, EditThisCookie)
+  if (str.startsWith('[') || (str.startsWith('{') && str.includes('"name"'))) {
+    try {
+      const parsed = JSON.parse(str);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      let netscape = '# Netscape HTTP Cookie File\n# Converted from JSON by SonicFlow\n';
+      let count = 0;
+      for (const c of items) {
+        if (!c.name || c.value === undefined) continue;
+        let dom = c.domain || '.youtube.com';
+        if (!dom.includes('.')) dom = '.youtube.com';
+        const flag = dom.startsWith('.') ? 'TRUE' : 'FALSE';
+        const p = c.path || '/';
+        const sec = c.secure !== false ? 'TRUE' : 'FALSE';
+        const exp = Math.floor(c.expirationDate || c.expiry || c.expires || (Date.now() / 1000 + 86400 * 365));
+        const prefix = c.httpOnly ? '#HttpOnly_' : '';
+        netscape += `${prefix}${dom}\t${flag}\t${p}\t${sec}\t${exp}\t${c.name}\t${c.value}\n`;
+        count++;
+      }
+      if (count > 0) return { content: netscape, count, type: 'JSON' };
+    } catch (e) {}
+  }
+
+  // 2. Cookie Header format: 'key=val; key2=val2' (e.g. copied from DevTools Cookie Request Header)
+  if (!str.includes('\t') && str.includes('=') && (str.includes(';') || str.includes('SID=') || str.includes('LOGIN_INFO='))) {
+    const pairs = str.replace(/^Cookie:\s*/i, '').split(';');
+    let netscape = '# Netscape HTTP Cookie File\n# Converted from Cookie Header by SonicFlow\n';
+    let count = 0;
+    for (const pair of pairs) {
+      const eqIdx = pair.indexOf('=');
+      if (eqIdx <= 0) continue;
+      const name = pair.slice(0, eqIdx).trim();
+      const val = pair.slice(eqIdx + 1).trim();
+      if (!name || !val || name.includes(' ') || name.startsWith('http')) continue;
+      const exp = Math.floor(Date.now() / 1000 + 86400 * 365);
+      netscape += `.youtube.com\tTRUE\t/\tTRUE\t${exp}\t${name}\t${val}\n`;
+      count++;
+    }
+    if (count >= 2) return { content: netscape, count, type: 'HTTP Header' };
+  }
+
+  // 3. Netscape format (tab or space separated, multi-line or collapsed single line)
+  // If Render collapsed newlines to spaces, restore newlines before domain markers
+  let normalized = str.replace(/(?:#HttpOnly_)?(?:\.youtube\.com|\.google\.com|youtube\.com|google\.com)[\t\s]/g, m => '\n' + m);
+  const lines = normalized.split('\n').map(l => l.trim()).filter(Boolean);
   let netscape = '# Netscape HTTP Cookie File\n';
   let count = 0;
-  for (const line of lines) {
-    if (line.startsWith('#')) continue;
-    let parts = line.split('\t');
-    if (parts.length < 7) {
-      parts = line.split(/\s+/);
+
+  for (let line of lines) {
+    if (line.startsWith('#') && !line.startsWith('#HttpOnly_')) continue;
+    let isHttpOnly = false;
+    if (line.startsWith('#HttpOnly_')) {
+      isHttpOnly = true;
+      line = line.substring('#HttpOnly_'.length).trim();
     }
+    let parts = line.split('\t');
+    if (parts.length < 7) parts = line.split(/\s+/);
     if (parts.length >= 7) {
-      netscape += parts.slice(0, 7).join('\t') + '\n';
+      const dom = parts[0].startsWith('.') ? parts[0] : ('.' + parts[0]);
+      const flag = parts[1].toUpperCase() === 'TRUE' ? 'TRUE' : 'FALSE';
+      const p = parts[2] || '/';
+      const sec = parts[3].toUpperCase() === 'TRUE' ? 'TRUE' : 'FALSE';
+      const exp = parts[4] || Math.floor(Date.now() / 1000 + 86400 * 365);
+      const name = parts[5];
+      const val = parts.slice(6).join(' ');
+      const prefix = isHttpOnly ? '#HttpOnly_' : '';
+      netscape += `${prefix}${dom}\t${flag}\t${p}\t${sec}\t${exp}\t${name}\t${val}\n`;
       count++;
     }
   }
 
-  if (count > 0) return { content: netscape, count };
+  if (count > 0) return { content: netscape, count, type: 'Netscape' };
   return null;
 }
 
 function initCookies() {
   const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
 
-  // 1. Raw text cookies passed via YOUTUBE_COOKIES env var (Render Dashboard)
+  // 1. Raw text / JSON / Header cookies passed via YOUTUBE_COOKIES env var (Render Dashboard)
   if (process.env.YOUTUBE_COOKIES && process.env.YOUTUBE_COOKIES.trim().length > 10) {
     try {
       const parsed = formatAndValidateCookies(process.env.YOUTUBE_COOKIES);
       if (parsed && parsed.count > 0) {
         fs.writeFileSync(cookiePath, parsed.content, 'utf8');
-        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies from YOUTUBE_COOKIES env var`);
+        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from YOUTUBE_COOKIES env var`);
         return cookiePath;
       } else {
         // Fallback: write raw if parser didn't match
         fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES.trim(), 'utf8');
-        console.log('[yt-dlp] ✓ Loaded raw YouTube cookies from YOUTUBE_COOKIES environment variable');
+        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from YOUTUBE_COOKIES environment variable (unverified format)');
         return cookiePath;
       }
     } catch (e) {
@@ -143,11 +192,11 @@ function initCookies() {
       const parsed = formatAndValidateCookies(decoded);
       if (parsed && parsed.count > 0) {
         fs.writeFileSync(cookiePath, parsed.content, 'utf8');
-        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies from YOUTUBE_COOKIES_BASE64 env var`);
+        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from YOUTUBE_COOKIES_BASE64 env var`);
         return cookiePath;
       } else {
         fs.writeFileSync(cookiePath, decoded, 'utf8');
-        console.log('[yt-dlp] ✓ Loaded raw YouTube cookies from YOUTUBE_COOKIES_BASE64 environment variable');
+        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from YOUTUBE_COOKIES_BASE64 environment variable');
         return cookiePath;
       }
     } catch (e) {
@@ -155,16 +204,25 @@ function initCookies() {
     }
   }
 
-  // 3. Check for existing cookies.txt in root, bin, or cache
+  // 3. Render Secret Files & Standard candidate paths
   const candidates = [
-    cookiePath,
+    '/etc/secrets/cookies.txt',
+    '/etc/secrets/youtube_cookies.txt',
     path.join(__dirname, 'cookies.txt'),
-    path.join(__dirname, 'bin', 'cookies.txt')
+    path.join(__dirname, 'bin', 'cookies.txt'),
+    cookiePath
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) {
       try {
         if (fs.statSync(c).size > 10) {
+          const raw = fs.readFileSync(c, 'utf8');
+          const parsed = formatAndValidateCookies(raw);
+          if (parsed && parsed.count > 0) {
+            fs.writeFileSync(cookiePath, parsed.content, 'utf8');
+            console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from file: ${c}`);
+            return cookiePath;
+          }
           console.log('[yt-dlp] ✓ Using existing cookie file:', c);
           return c;
         }
@@ -186,6 +244,14 @@ function getBaseYtdlpArgs(customClient = null) {
   const cookieFile = initCookies();
   if (cookieFile && fs.existsSync(cookieFile)) {
     args.push('--cookies', cookieFile);
+  }
+
+  if (process.env.YOUTUBE_PROXY && process.env.YOUTUBE_PROXY.trim()) {
+    args.push('--proxy', process.env.YOUTUBE_PROXY.trim());
+  }
+
+  if (process.env.YOUTUBE_PO_TOKEN && process.env.YOUTUBE_PO_TOKEN.trim()) {
+    args.push('--extractor-args', `youtube:po_token=web.gvs+${process.env.YOUTUBE_PO_TOKEN.trim()}`);
   }
 
   if (customClient) {
@@ -357,9 +423,16 @@ function downloadYouTubeAudio(youtubeUrl) {
       });
     };
 
-    executeDownload(null)
+    const hasCookies = !!initCookies();
+    const primaryClient = hasCookies ? null : 'android,web';
+
+    executeDownload(primaryClient)
       .catch((err) => {
-        console.warn('[yt-dlp] Initial extraction error, retrying with pure android client:', err.message);
+        console.warn('[yt-dlp] Initial extraction error, retrying with android,web client:', err.message);
+        return executeDownload('android,web');
+      })
+      .catch((err2) => {
+        console.warn('[yt-dlp] Second extraction error, retrying with pure android client:', err2.message);
         return executeDownload('android');
       })
       .then((fullPath) => {
@@ -471,9 +544,16 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
       });
     };
 
-    executeVideoDownload(null)
+    const hasCookies = !!initCookies();
+    const primaryClient = hasCookies ? null : 'android,web';
+
+    executeVideoDownload(primaryClient)
       .catch((err) => {
-        console.warn('[yt-dlp video] Initial download error, retrying with pure android client:', err.message);
+        console.warn('[yt-dlp video] Initial download error, retrying with android,web client:', err.message);
+        return executeVideoDownload('android,web');
+      })
+      .catch((err2) => {
+        console.warn('[yt-dlp video] Second download error, retrying with pure android client:', err2.message);
         return executeVideoDownload('android');
       })
       .then((fullPath) => {
@@ -548,14 +628,21 @@ async function ensureAudioCached(rawUrl) {
 
             for (const query of candidates) {
               console.log('[Audio Fallback] Searching iTunes for:', query);
-              const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=1`);
+              const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&entity=song&limit=3`);
               if (itunesRes.ok) {
                 const itData = await itunesRes.json();
-                if (itData.results && itData.results[0] && itData.results[0].previewUrl) {
-                  console.log('[Audio Fallback] Found genuine iTunes audio stream for:', itData.results[0].trackName);
-                  const itunesCached = await ensureAudioCached(itData.results[0].previewUrl);
-                  if (itunesCached && fs.existsSync(itunesCached)) {
-                    return itunesCached;
+                if (itData.results && itData.results.length > 0) {
+                  const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+                  const matched = itData.results.find(r => {
+                    const combined = `${r.trackName || ''} ${r.artistName || ''}`.toLowerCase();
+                    return queryWords.some(w => combined.includes(w));
+                  });
+                  if (matched && matched.previewUrl) {
+                    console.log(`[Audio Fallback] Found genuine iTunes audio stream for: "${matched.trackName}" by "${matched.artistName}"`);
+                    const itunesCached = await ensureAudioCached(matched.previewUrl);
+                    if (itunesCached && fs.existsSync(itunesCached)) {
+                      return itunesCached;
+                    }
                   }
                 }
               }
