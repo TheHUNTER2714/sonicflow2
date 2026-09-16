@@ -166,41 +166,50 @@ function formatAndValidateCookies(raw) {
 function initCookies() {
   const cookiePath = path.join(cacheDir, 'youtube_cookies.txt');
 
-  // 1. Raw text / JSON / Header cookies passed via YOUTUBE_COOKIES env var (Render Dashboard)
-  if (process.env.YOUTUBE_COOKIES && process.env.YOUTUBE_COOKIES.trim().length > 10) {
+  // 1. Raw text / JSON / Header cookies passed via env vars (Render Dashboard)
+  const rawEnvCookie = process.env.YOUTUBE_COOKIES || 
+                       process.env.YOUTUBE_COOKIE || 
+                       process.env.YT_COOKIES || 
+                       process.env.COOKIES || 
+                       process.env.COOKIE;
+
+  if (rawEnvCookie && rawEnvCookie.trim().length > 10) {
     try {
-      const parsed = formatAndValidateCookies(process.env.YOUTUBE_COOKIES);
+      const parsed = formatAndValidateCookies(rawEnvCookie);
       if (parsed && parsed.count > 0) {
         fs.writeFileSync(cookiePath, parsed.content, 'utf8');
-        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from YOUTUBE_COOKIES env var`);
+        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from environment variable`);
         return cookiePath;
       } else {
-        // Fallback: write raw if parser didn't match
-        fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES.trim(), 'utf8');
-        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from YOUTUBE_COOKIES environment variable (unverified format)');
+        fs.writeFileSync(cookiePath, rawEnvCookie.trim(), 'utf8');
+        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from environment variable (unverified format)');
         return cookiePath;
       }
     } catch (e) {
-      console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES:', e.message);
+      console.warn('[yt-dlp] Failed to write cookie env var:', e.message);
     }
   }
 
-  // 2. Base64-encoded cookies passed via YOUTUBE_COOKIES_BASE64 env var
-  if (process.env.YOUTUBE_COOKIES_BASE64 && process.env.YOUTUBE_COOKIES_BASE64.trim().length > 10) {
+  // 2. Base64-encoded cookies passed via env vars
+  const rawB64 = process.env.YOUTUBE_COOKIES_BASE64 || 
+                 process.env.YT_COOKIES_BASE64 || 
+                 process.env.COOKIES_BASE64;
+
+  if (rawB64 && rawB64.trim().length > 10) {
     try {
-      const decoded = Buffer.from(process.env.YOUTUBE_COOKIES_BASE64.trim(), 'base64').toString('utf8');
+      const decoded = Buffer.from(rawB64.trim(), 'base64').toString('utf8');
       const parsed = formatAndValidateCookies(decoded);
       if (parsed && parsed.count > 0) {
         fs.writeFileSync(cookiePath, parsed.content, 'utf8');
-        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from YOUTUBE_COOKIES_BASE64 env var`);
+        console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from BASE64 env var`);
         return cookiePath;
       } else {
         fs.writeFileSync(cookiePath, decoded, 'utf8');
-        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from YOUTUBE_COOKIES_BASE64 environment variable');
+        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from BASE64 environment variable');
         return cookiePath;
       }
     } catch (e) {
-      console.warn('[yt-dlp] Failed to write YOUTUBE_COOKIES_BASE64:', e.message);
+      console.warn('[yt-dlp] Failed to write BASE64 cookies:', e.message);
     }
   }
 
@@ -208,6 +217,7 @@ function initCookies() {
   const candidates = [
     '/etc/secrets/cookies.txt',
     '/etc/secrets/youtube_cookies.txt',
+    '/etc/secrets/yt_cookies.txt',
     path.join(__dirname, 'cookies.txt'),
     path.join(__dirname, 'bin', 'cookies.txt'),
     cookiePath
@@ -237,8 +247,7 @@ function getBaseYtdlpArgs(customClient = null) {
   const args = [
     '--no-playlist',
     '--no-check-certificates',
-    '--js-runtimes', 'node',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
+    '--js-runtimes', 'node'
   ];
 
   const cookieFile = initCookies();
@@ -397,7 +406,11 @@ function downloadYouTubeAudio(youtubeUrl) {
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
-        proc.stderr.on('data', d => { stderr += d.toString(); });
+        proc.stderr.on('data', d => {
+          const s = d.toString();
+          stderr += s;
+          console.log('[yt-dlp err]:', s.slice(0, 120).trim());
+        });
         proc.stdout.on('data', d => { console.log('[yt-dlp]:', d.toString().slice(0, 100).trim()); });
 
         proc.on('close', (code) => {
@@ -439,7 +452,59 @@ function downloadYouTubeAudio(youtubeUrl) {
         activeYtDownloads.delete(videoId);
         resolve(fullPath);
       })
-      .catch((finalErr) => {
+      .catch(async (finalErr) => {
+        console.warn('[yt-dlp] Direct YouTube extraction blocked by datacenter botguard:', finalErr.message);
+
+        // Resilience Engine: Query authentic video metadata via YouTube oEmbed and fetch the full studio track from SoundCloud
+        try {
+          console.log('[Resilience Engine] Resolving authentic song title via YouTube oEmbed for videoId:', videoId);
+          let rawTitle = '';
+          const oembedRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
+          if (oembedRes.ok) {
+            const oData = await oembedRes.json();
+            rawTitle = oData.title || '';
+          }
+
+          const cleanQuery = (rawTitle || videoId)
+            .replace(/[\(\[\{].*?[\)\]\}]/g, ' ')
+            .replace(/\b(official\s*(music\s*)?video|official\s*audio|lyrics?|visualizer|hd|4k|remastered|explicit|audio)\b/gi, ' ')
+            .replace(/[|•~\\/]/g, ' ')
+            .replace(/[-–—_]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          const candidates = [];
+          if (cleanQuery && cleanQuery.length > 2) {
+            candidates.push(cleanQuery);
+          }
+          if (rawTitle) {
+            const parts = rawTitle.split(/[|–—\-]/).map(s => s.trim()).filter(Boolean);
+            if (parts.length > 1) {
+              const p0 = parts[0].replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
+              const p1 = parts[1].replace(/[\(\[\{].*?[\)\]\}]/g, '').trim();
+              const combo = `${p0} ${p1}`.trim();
+              if (combo && !candidates.includes(combo)) candidates.push(combo);
+              if (p0 && !candidates.includes(p0)) candidates.push(p0);
+            }
+          }
+
+          for (const cand of candidates) {
+            try {
+              console.log(`[Resilience Engine] Searching SoundCloud for full original song: "${cand}"...`);
+              const scFile = await downloadSoundCloudAudio(cand, videoId);
+              if (scFile && fs.existsSync(scFile)) {
+                console.log('[Resilience Engine] ✓ Successfully acquired original audio stream:', scFile);
+                activeYtDownloads.delete(videoId);
+                return resolve(scFile);
+              }
+            } catch (scErr) {
+              console.warn(`[Resilience Engine] Search for "${cand}" failed:`, scErr.message);
+            }
+          }
+        } catch (scErr) {
+          console.warn('[Resilience Engine] Note:', scErr.message);
+        }
+
         activeYtDownloads.delete(videoId);
         console.warn('[yt-dlp] Process finished without output file:', finalErr.message);
         reject(finalErr);
@@ -448,6 +513,64 @@ function downloadYouTubeAudio(youtubeUrl) {
 
   activeYtDownloads.set(videoId, downloadPromise);
   return downloadPromise;
+}
+
+function downloadSoundCloudAudio(query, videoId) {
+  return new Promise((resolve, reject) => {
+    const ytdlpBin = getYtdlpBin();
+    if (!isBinaryAvailable(ytdlpBin)) {
+      return reject(new Error('yt-dlp binary not found'));
+    }
+
+    const outputTemplate = path.join(cacheDir, `yt_${videoId}.%(ext)s`);
+    const args = [
+      '--no-playlist',
+      '--no-check-certificates',
+      '-f', 'http_mp3_1_0/hls_aac_160k/ba/b',
+      '-o', outputTemplate,
+      '--force-overwrites',
+      `scsearch1:${query}`
+    ];
+
+    const ffmpegDir = getFfmpegDir();
+    if (ffmpegDir) {
+      args.push('--ffmpeg-location', ffmpegDir);
+    }
+
+    console.log(`[SoundCloud] Invoking yt-dlp for scsearch1:${query}`);
+    const proc = spawn(ytdlpBin, args);
+
+    let stderr = '';
+    proc.stderr.on('data', d => {
+      const s = d.toString();
+      stderr += s;
+      console.log('[SoundCloud log]:', s.slice(0, 120).trim());
+    });
+    proc.stdout.on('data', d => {
+      console.log('[SoundCloud]:', d.toString().slice(0, 100).trim());
+    });
+
+    proc.on('close', (code) => {
+      try {
+        const files = fs.readdirSync(cacheDir);
+        const found = files.find(f => 
+          (f.startsWith(`yt_${videoId}.`) || f.startsWith(`real_yt_${videoId}.`)) && 
+          (f.endsWith('.m4a') || f.endsWith('.mp3') || f.endsWith('.webm') || f.endsWith('.opus') || f.endsWith('.mp4') || f.endsWith('.aac')) &&
+          !f.endsWith('.temp') && !f.endsWith('.part') &&
+          fs.statSync(path.join(cacheDir, f)).size > 10000
+        );
+        if (found) {
+          const fullPath = path.join(cacheDir, found);
+          console.log('[SoundCloud] ✓ Successfully acquired full audio for videoId:', videoId, fullPath);
+          return resolve(fullPath);
+        }
+      } catch (e) {}
+
+      reject(new Error(`SoundCloud search exited with code ${code}: ${stderr.slice(-200).trim()}`));
+    });
+
+    proc.on('error', reject);
+  });
 }
 
 const activeYtVideoDownloads = new Map();
@@ -632,10 +755,15 @@ async function ensureAudioCached(rawUrl) {
               if (itunesRes.ok) {
                 const itData = await itunesRes.json();
                 if (itData.results && itData.results.length > 0) {
-                  const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+                  const rawLower = (rawVideoTitle || '').toLowerCase();
                   const matched = itData.results.find(r => {
-                    const combined = `${r.trackName || ''} ${r.artistName || ''}`.toLowerCase();
-                    return queryWords.some(w => combined.includes(w));
+                    const itArtist = (r.artistName || '').toLowerCase();
+                    const itTrack = (r.trackName || '').toLowerCase();
+                    const artistWords = itArtist.split(/\s+/).filter(w => w.length > 2);
+                    const trackWords = itTrack.split(/\s+/).filter(w => w.length > 2);
+                    const artistMatch = artistWords.some(w => rawLower.includes(w));
+                    const trackMatch = trackWords.some(w => rawLower.includes(w));
+                    return artistMatch && trackMatch;
                   });
                   if (matched && matched.previewUrl) {
                     console.log(`[Audio Fallback] Found genuine iTunes audio stream for: "${matched.trackName}" by "${matched.artistName}"`);
