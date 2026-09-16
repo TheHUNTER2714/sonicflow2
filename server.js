@@ -258,6 +258,11 @@ function getBaseYtdlpArgs(customClient = null) {
     args.push('--proxy', process.env.YOUTUBE_PROXY.trim());
   }
 
+  if (process.env.YOUTUBE_VISITOR_DATA && process.env.YOUTUBE_VISITOR_DATA.trim()) {
+    args.push('--extractor-args', `youtube:player_skip=webpage,configs;visitor_data=${process.env.YOUTUBE_VISITOR_DATA.trim()}`);
+    args.push('--extractor-args', 'youtubetab:skip=webpage');
+  }
+
   if (process.env.YOUTUBE_PO_TOKEN && process.env.YOUTUBE_PO_TOKEN.trim()) {
     args.push('--extractor-args', `youtube:po_token=web.gvs+${process.env.YOUTUBE_PO_TOKEN.trim()}`);
   }
