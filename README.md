@@ -16,11 +16,6 @@
 
 <br/>
 
-<img
-  src="./assets/sonicflow-hero.svg"
-  alt="SonicFlow Animated Hero"
-  width="900"
-/>
 
 <h1>SONICFLOW</h1>
 
