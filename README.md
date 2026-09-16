@@ -8,7 +8,7 @@
 
 <a href="https://github.com/TheHUNTER2714/sonicflow2">
   <img
-    src="https://raw.githubusercontent.com/TheHUNTER2714/sonicflow2/main-2/assets/sonicflow-logo.svg"
+    src="ChatGPT Image Sep 16, 2026, 10_24_48 PM.png"
     alt="SonicFlow"
     width="180"
   />
