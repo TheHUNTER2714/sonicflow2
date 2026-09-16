@@ -263,14 +263,36 @@ function initCookies(forceRecheck = false) {
   return null;
 }
 
+const binDir = path.join(__dirname, 'bin');
+if (fs.existsSync(binDir)) {
+  process.env.PATH = `${binDir}${path.delimiter}${process.env.PATH}`;
+}
+
 function getBaseYtdlpArgs(customClient = null) {
+  const ytdlpCacheDir = path.join(cacheDir, 'ytdlp_cache');
+  if (!fs.existsSync(ytdlpCacheDir)) {
+    try { fs.mkdirSync(ytdlpCacheDir, { recursive: true }); } catch (e) {}
+  }
+
   const args = [
     '--no-playlist',
     '--no-check-certificates',
     '--geo-bypass',
     '--geo-bypass-country', 'IN',
-    '--js-runtimes', 'node'
+    '--remote-components', 'ejs:github',
+    '--cache-dir', ytdlpCacheDir
   ];
+
+  // Configure JavaScript runtimes for YouTube challenge solving: Deno and Node.js
+  const denoBin = path.join(binDir, process.platform === 'win32' ? 'deno.exe' : 'deno');
+  if (fs.existsSync(denoBin)) {
+    args.push('--js-runtimes', `deno:${denoBin}`);
+  }
+  args.push('--js-runtimes', 'deno');
+  if (process.execPath) {
+    args.push('--js-runtimes', `node:${process.execPath}`);
+  }
+  args.push('--js-runtimes', 'node');
 
   const cookieFile = initCookies();
   if (cookieFile && fs.existsSync(cookieFile)) {
@@ -458,7 +480,7 @@ function downloadYouTubeAudio(youtubeUrl) {
             }
           } catch (e) {}
 
-          rejAttempt(new Error(`yt-dlp exited with code ${code}: ${stderr.slice(-200).trim()}`));
+          rejAttempt(new Error(`yt-dlp exited with code ${code}: ${stderr.slice(-600).trim()}`));
         });
 
         proc.on('error', rejAttempt);
@@ -650,7 +672,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
       return new Promise((resAttempt, rejAttempt) => {
         const args = [
           ...getBaseYtdlpArgs(clientMode),
-          '-f', `bv*[height<=?${maxHeight}][vcodec^=avc1]/bv*[height<=?${maxHeight}][vcodec^=h264]/bv*[height<=?${maxHeight}][ext=mp4]/bv*[height<=?${maxHeight}]/b[height<=?${maxHeight}]/bv*/b/18/best`,
+          '-f', `bv*[height<=?${maxHeight}][vcodec^=avc1]/bv*[height<=?${maxHeight}][vcodec^=h264]/bv*[height<=?${maxHeight}][ext=mp4]/bv*[height<=?${maxHeight}]/b[height<=?${maxHeight}]/bv*/b/18/best/bestvideo/best`,
           '-o', videoTemplate,
           '--force-overwrites',
           '--no-mtime',
@@ -692,7 +714,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
             }
           } catch (e) {}
 
-          rejAttempt(new Error(`yt-dlp video exited with code ${code}: ${stderr.slice(-200).trim()}`));
+          rejAttempt(new Error(`yt-dlp video exited with code ${code}: ${stderr.slice(-600).trim()}`));
         });
 
         proc.on('error', rejAttempt);

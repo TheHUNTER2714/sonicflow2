@@ -92,6 +92,29 @@ async function runSetup() {
         console.warn('[SonicFlow Setup] Server will attempt on-demand execution or fallback streams.');
       }
     }
+
+    // Acquire Deno runtime for YouTube JS challenge solving (recommended by yt-dlp)
+    const denoBin = path.join(binDir, 'deno');
+    if (!fs.existsSync(denoBin)) {
+      try {
+        console.log('[SonicFlow Setup] Fetching Deno runtime for YouTube EJS challenge solving...');
+        const zipPath = path.join(binDir, 'deno.zip');
+        await downloadFileWithRedirects('https://github.com/denoland/deno/releases/latest/download/deno-x86_64-unknown-linux-gnu.zip', zipPath);
+        try {
+          const { execSync } = require('child_process');
+          execSync(`unzip -o "${zipPath}" -d "${binDir}"`, { stdio: 'ignore' });
+          if (fs.existsSync(denoBin)) {
+            fs.chmodSync(denoBin, 0o755);
+            console.log('[SonicFlow Setup] ✓ Deno runtime installed and verified at:', denoBin);
+          }
+        } catch (unzipErr) {
+          console.warn('[SonicFlow Setup] Could not unzip Deno; Node.js will be used as primary JS runtime');
+        }
+        if (fs.existsSync(zipPath)) try { fs.unlinkSync(zipPath); } catch (e) {}
+      } catch (err) {
+        console.warn('[SonicFlow Setup] Note: Deno download skipped, Node.js will be used as primary JS runtime:', err.message);
+      }
+    }
   } else {
     const winBin = path.join(binDir, 'yt-dlp.exe');
     if (fs.existsSync(winBin)) {
