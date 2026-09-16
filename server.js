@@ -111,9 +111,9 @@ function formatAndValidateCookies(raw) {
     } catch (e) {}
   }
 
-  // 2. Cookie Header format: 'key=val; key2=val2' (e.g. copied from DevTools Cookie Request Header)
-  if (!str.includes('\t') && str.includes('=') && (str.includes(';') || str.includes('SID=') || str.includes('LOGIN_INFO='))) {
-    const pairs = str.replace(/^Cookie:\s*/i, '').split(';');
+  // 2. Cookie Header format: 'key=val; key2=val2' or newline-delimited (e.g. copied from DevTools Cookie Request Header)
+  if (!str.includes('\t') && str.includes('=') && (str.includes(';') || str.includes('\n') || str.includes('SID=') || str.includes('LOGIN_INFO='))) {
+    const pairs = str.replace(/^Cookie:\s*/i, '').split(/[;\n]/);
     let netscape = '# Netscape HTTP Cookie File\n# Converted from Cookie Header by SonicFlow\n';
     let count = 0;
     for (const pair of pairs) {
@@ -121,12 +121,12 @@ function formatAndValidateCookies(raw) {
       if (eqIdx <= 0) continue;
       const name = pair.slice(0, eqIdx).trim();
       const val = pair.slice(eqIdx + 1).trim();
-      if (!name || !val || name.includes(' ') || name.startsWith('http')) continue;
+      if (!name || !val || name.includes(' ') || name.startsWith('http') || name.startsWith('#')) continue;
       const exp = Math.floor(Date.now() / 1000 + 86400 * 365);
       netscape += `.youtube.com\tTRUE\t/\tTRUE\t${exp}\t${name}\t${val}\n`;
       count++;
     }
-    if (count >= 2) return { content: netscape, count, type: 'HTTP Header' };
+    if (count >= 1) return { content: netscape, count, type: 'HTTP Header' };
   }
 
   // 3. Netscape format (tab or space separated, multi-line or collapsed single line)
@@ -181,12 +181,12 @@ function initCookies() {
         console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from environment variable`);
         return cookiePath;
       } else {
-        fs.writeFileSync(cookiePath, rawEnvCookie.trim(), 'utf8');
-        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from environment variable (unverified format)');
-        return cookiePath;
+        // Discard unverified cookie values to prevent YouTube HTTP 429 rate limit blocks
+        console.warn('[yt-dlp] ⚠️ Environment cookie could not be verified into Netscape/JSON format — ignoring to prevent HTTP 429 blocks');
+        if (fs.existsSync(cookiePath)) try { fs.unlinkSync(cookiePath); } catch (e) {}
       }
     } catch (e) {
-      console.warn('[yt-dlp] Failed to write cookie env var:', e.message);
+      console.warn('[yt-dlp] Failed to process cookie env var:', e.message);
     }
   }
 
@@ -204,12 +204,11 @@ function initCookies() {
         console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from BASE64 env var`);
         return cookiePath;
       } else {
-        fs.writeFileSync(cookiePath, decoded, 'utf8');
-        console.log('[yt-dlp] ⚠️ Loaded raw YouTube cookies from BASE64 environment variable');
-        return cookiePath;
+        console.warn('[yt-dlp] ⚠️ BASE64 cookie could not be verified — ignoring to prevent HTTP 429 blocks');
+        if (fs.existsSync(cookiePath)) try { fs.unlinkSync(cookiePath); } catch (e) {}
       }
     } catch (e) {
-      console.warn('[yt-dlp] Failed to write BASE64 cookies:', e.message);
+      console.warn('[yt-dlp] Failed to process BASE64 cookies:', e.message);
     }
   }
 
@@ -219,8 +218,7 @@ function initCookies() {
     '/etc/secrets/youtube_cookies.txt',
     '/etc/secrets/yt_cookies.txt',
     path.join(__dirname, 'cookies.txt'),
-    path.join(__dirname, 'bin', 'cookies.txt'),
-    cookiePath
+    path.join(__dirname, 'bin', 'cookies.txt')
   ];
   for (const c of candidates) {
     if (fs.existsSync(c)) {
@@ -233,8 +231,6 @@ function initCookies() {
             console.log(`[yt-dlp] ✓ Loaded & verified ${parsed.count} YouTube cookies (${parsed.type}) from file: ${c}`);
             return cookiePath;
           }
-          console.log('[yt-dlp] ✓ Using existing cookie file:', c);
-          return c;
         }
       } catch (e) {}
     }
@@ -247,6 +243,8 @@ function getBaseYtdlpArgs(customClient = null) {
   const args = [
     '--no-playlist',
     '--no-check-certificates',
+    '--geo-bypass',
+    '--geo-bypass-country', 'IN',
     '--js-runtimes', 'node'
   ];
 
@@ -624,7 +622,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p') {
       return new Promise((resAttempt, rejAttempt) => {
         const args = [
           ...getBaseYtdlpArgs(clientMode),
-          '-f', `bv*[height<=?${maxHeight}]+ba/b[height<=?${maxHeight}]/bv*+ba/b`,
+          '-f', `bv*[height<=?${maxHeight}]+ba/b[height<=?${maxHeight}]/bv*+ba/b/18/b/best`,
           '-o', videoTemplate,
           '--force-overwrites',
           '--no-mtime',
@@ -1038,8 +1036,29 @@ const server = http.createServer(async (req, res) => {
   // 3. API: High Fidelity FFmpeg Download (Real MP3 320k or Universal MP4 Video with 8D/16D/Stereo)
   if (reqPath === '/api/download-original') {
     const targetUrlParam = parsedUrl.searchParams.get('url') || '';
-    const rawTitle = parsedUrl.searchParams.get('title') || 'SonicFlow_Master';
-    const cleanTitle = rawTitle.replace(/[^a-zA-Z0-9_-]/g, '_').substring(0, 50) || 'SonicFlow_Master';
+    let rawTitle = parsedUrl.searchParams.get('title') || '';
+
+    // Auto-resolve authentic YouTube video title if URL is a YouTube link
+    const ytMatch = targetUrlParam.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/);
+    if (ytMatch) {
+      const vId = ytMatch[1];
+      try {
+        const oeRes = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${vId}&format=json`);
+        if (oeRes.ok) {
+          const oeData = await oeRes.json();
+          if (oeData.title) rawTitle = oeData.title;
+        }
+      } catch (e) {}
+    }
+
+    if (!rawTitle) rawTitle = 'SonicFlow_Master';
+
+    const cleanTitle = rawTitle
+      .replace(/[\(\[\{].*?[\)\]\}]/g, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .replace(/_+/g, '_')
+      .substring(0, 50) || 'SonicFlow_Master';
+
     const effect = (parsedUrl.searchParams.get('effect') || '8D').toUpperCase();
     const quality = (parsedUrl.searchParams.get('quality') || '320kbps').replace(/[^a-zA-Z0-9]/g, '');
     const format = (parsedUrl.searchParams.get('format') || 'mp3').toLowerCase() === 'mp4' ? 'mp4' : 'mp3';
