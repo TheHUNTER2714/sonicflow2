@@ -288,7 +288,7 @@ if (fs.existsSync(binDir)) {
   process.env.PATH = `${binDir}${path.delimiter}${process.env.PATH}`;
 }
 
-function getBaseYtdlpArgs(customClient = null) {
+function getBaseYtdlpArgs(customClient = null, ignoreCookies = false) {
   const ytdlpCacheDir = path.join(cacheDir, 'ytdlp_cache');
   if (!fs.existsSync(ytdlpCacheDir)) {
     try { fs.mkdirSync(ytdlpCacheDir, { recursive: true }); } catch (e) {}
@@ -314,9 +314,11 @@ function getBaseYtdlpArgs(customClient = null) {
   }
   args.push('--js-runtimes', 'node');
 
-  const cookieFile = initCookies();
-  if (cookieFile && fs.existsSync(cookieFile)) {
-    args.push('--cookies', cookieFile);
+  if (!ignoreCookies) {
+    const cookieFile = initCookies();
+    if (cookieFile && fs.existsSync(cookieFile)) {
+      args.push('--cookies', cookieFile);
+    }
   }
 
   if (process.env.YOUTUBE_PROXY && process.env.YOUTUBE_PROXY.trim()) {
@@ -459,10 +461,10 @@ function downloadYouTubeAudio(youtubeUrl) {
 
     const outputTemplate = path.join(cacheDir, `yt_${videoId}.%(ext)s`);
 
-    const executeDownload = (clientMode = 'android,web') => {
+    const executeDownload = (clientMode = 'android,web', ignoreCookies = false) => {
       return new Promise((resAttempt, rejAttempt) => {
         const args = [
-          ...getBaseYtdlpArgs(clientMode),
+          ...getBaseYtdlpArgs(clientMode, ignoreCookies),
           '-f', 'ba/b[ext=m4a]/ba/b',
           '-x',
           '--audio-format', 'm4a',
@@ -471,7 +473,7 @@ function downloadYouTubeAudio(youtubeUrl) {
           youtubeUrl
         ];
 
-        console.log(`[yt-dlp] Downloading audio (${clientMode || 'authenticated/default'}):`, youtubeUrl);
+        console.log(`[yt-dlp] Downloading audio (${clientMode || 'authenticated/default'}, ignoreCookies=${ignoreCookies}):`, youtubeUrl);
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
@@ -508,14 +510,30 @@ function downloadYouTubeAudio(youtubeUrl) {
     };
 
     const hasCookies = !!initCookies();
-    const primaryClient = hasCookies ? null : 'visionos';
 
-    // Multi-tier client cascade: visionos -> android -> SoundCloud Resilience Engine
-    executeDownload(primaryClient)
-      .catch((err1) => {
-        console.log(`[yt-dlp] Primary audio attempt failed (${err1.message.slice(0, 80)}), retrying with android...`);
-        return executeDownload('android');
-      })
+    // Multi-tier client cascade:
+    // If cookies are present, try with cookies first.
+    // If cookies fail (e.g. expired after 2 days), immediately fallback to unauthenticated clients WITHOUT cookies
+    let downloadAttempt;
+    if (hasCookies) {
+      downloadAttempt = executeDownload(null, false)
+        .catch((err1) => {
+          console.log(`[yt-dlp] Authenticated attempt failed (${err1.message.slice(0, 80)}). Cookies may have expired; retrying unauthenticated visionos client...`);
+          return executeDownload('visionos', true);
+        })
+        .catch((err2) => {
+          console.log(`[yt-dlp] Visionos attempt failed (${err2.message.slice(0, 80)}), retrying unauthenticated android client...`);
+          return executeDownload('android', true);
+        });
+    } else {
+      downloadAttempt = executeDownload('visionos', true)
+        .catch((err1) => {
+          console.log(`[yt-dlp] Visionos attempt failed (${err1.message.slice(0, 80)}), retrying unauthenticated android client...`);
+          return executeDownload('android', true);
+        });
+    }
+
+    downloadAttempt
       .then((fullPath) => {
         activeYtDownloads.delete(videoId);
         resolve(fullPath);
@@ -688,10 +706,10 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
 
     const videoTemplate = path.join(cacheDir, `yt_v_${videoId}_${maxHeight}.%(ext)s`);
 
-    const executeVideoDownload = (clientMode = 'visionos', targetUrl = youtubeUrl) => {
+    const executeVideoDownload = (clientMode = 'visionos', targetUrl = youtubeUrl, ignoreCookies = false) => {
       return new Promise((resAttempt, rejAttempt) => {
         const args = [
-          ...getBaseYtdlpArgs(clientMode),
+          ...getBaseYtdlpArgs(clientMode, ignoreCookies),
           '-f', `bv*[height<=?${maxHeight}][vcodec^=avc1]/bv*[height<=?${maxHeight}][vcodec^=h264]/bv*[height<=?${maxHeight}][ext=mp4]/bv*[height<=?${maxHeight}]/b[height<=?${maxHeight}]/bv*/b/18/best/bestvideo/best`,
           '-o', videoTemplate,
           '--force-overwrites',
@@ -699,7 +717,7 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
           targetUrl
         ];
 
-        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode || 'authenticated/default'}):`, targetUrl);
+        console.log(`[yt-dlp] Downloading video stream (${maxHeight}p, ${clientMode || 'authenticated/default'}, ignoreCookies=${ignoreCookies}):`, targetUrl);
         const proc = spawn(ytdlpBin, args);
 
         let stderr = '';
@@ -742,18 +760,29 @@ function downloadYouTubeVideo(youtubeUrl, quality = '1080p', preferredTitle = ''
     };
 
     const hasCookies = !!initCookies();
-    const clientsToTry = hasCookies 
-      ? [null, 'mweb', 'ios', 'visionos', 'android']
-      : ['visionos', 'android', 'mweb', 'ios', null];
+    const attemptsToTry = hasCookies 
+      ? [
+          { client: null, ignoreCookies: false },
+          { client: 'visionos', ignoreCookies: true },
+          { client: 'android', ignoreCookies: true },
+          { client: 'mweb', ignoreCookies: true },
+          { client: 'ios', ignoreCookies: true }
+        ]
+      : [
+          { client: 'visionos', ignoreCookies: true },
+          { client: 'android', ignoreCookies: true },
+          { client: 'mweb', ignoreCookies: true },
+          { client: 'ios', ignoreCookies: true }
+        ];
 
     let downloadAttempt = Promise.reject(new Error('Starting video client cascade'));
-    for (let i = 0; i < clientsToTry.length; i++) {
-      const client = clientsToTry[i];
+    for (let i = 0; i < attemptsToTry.length; i++) {
+      const { client, ignoreCookies } = attemptsToTry[i];
       downloadAttempt = downloadAttempt.catch((prevErr) => {
         if (i > 0) {
-          console.log(`[yt-dlp video] Client attempt ${i} failed (${prevErr.message.slice(0, 80)}), trying ${client || 'default/web'}...`);
+          console.log(`[yt-dlp video] Client attempt ${i} failed (${prevErr.message.slice(0, 80)}), trying ${client || 'default'} (ignoreCookies=${ignoreCookies})...`);
         }
-        return executeVideoDownload(client);
+        return executeVideoDownload(client, youtubeUrl, ignoreCookies);
       });
     }
 
@@ -907,6 +936,10 @@ async function ensureAudioCached(rawUrl) {
         console.warn('[Audio Fallback] Could not resolve alternative iTunes stream:', fallbackErr.message);
       }
     }
+
+    // If all direct extraction and audio fallbacks for YouTube fail, safely return local master fallback.
+    // NEVER fall through to Section 3 (which would download the YouTube HTML webpage as audio and corrupt the cache).
+    return fallbackPath;
   }
 
   // 2. Local original assets
@@ -920,6 +953,11 @@ async function ensureAudioCached(rawUrl) {
     return fallbackPath;
   }
 
+  // YouTube URLs must never be fetched as direct HTTP audio files
+  if (targetUrl.includes('youtube.com') || targetUrl.includes('youtu.be')) {
+    return fallbackPath;
+  }
+
   // 3. Direct HTTP Audio Stream (e.g., iTunes preview, CDN audio, or raw mp3/m4a link)
   const hash = crypto.createHash('md5').update(targetUrl).digest('hex');
   const cachedFilePath = path.join(cacheDir, `${hash}.m4a`);
@@ -927,8 +965,19 @@ async function ensureAudioCached(rawUrl) {
   if (fs.existsSync(cachedFilePath)) {
     try {
       const stats = fs.statSync(cachedFilePath);
-      if (stats.size > 10000) {
-        return cachedFilePath;
+      if (stats.size > 1000) {
+        // Verify cache file is genuine audio data and not a poisoned HTML error response
+        const fd = fs.openSync(cachedFilePath, 'r');
+        const buffer = Buffer.alloc(80);
+        fs.readSync(fd, buffer, 0, 80, 0);
+        fs.closeSync(fd);
+        const snippet = buffer.toString('utf8');
+        if (snippet.includes('<!DOCTYPE') || snippet.includes('<html')) {
+          console.warn('[Cache] Purging poisoned HTML file from audio cache:', cachedFilePath);
+          try { fs.unlinkSync(cachedFilePath); } catch (e) {}
+        } else {
+          return cachedFilePath;
+        }
       }
     } catch (e) {}
   }
@@ -947,6 +996,12 @@ async function ensureAudioCached(rawUrl) {
           return downloadWithRedirects(nextUrl, maxRedirects - 1);
         }
         if (res.statusCode !== 200) return resolve(fallbackPath);
+
+        const contentType = (res.headers['content-type'] || '').toLowerCase();
+        if (contentType.includes('text/html') || contentType.includes('application/json') || contentType.includes('text/plain')) {
+          console.warn('[Audio Stream] Expected audio stream but received text/HTML from:', curUrl);
+          return resolve(fallbackPath);
+        }
 
         const tempFile = cachedFilePath + '.tmp';
         const fileStream = fs.createWriteStream(tempFile);
